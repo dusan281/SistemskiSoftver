@@ -1,0 +1,21 @@
+.section drugaSekcija
+
+
+maca:
+ld $aca, %r1
+ld $aca, %r1
+ld $maca, %r1
+
+
+jmp aca
+
+
+aca:
+
+
+
+.section prvaSekcija
+jmp aca
+ld $0x12345678, %r2
+
+.end
