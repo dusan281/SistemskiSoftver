@@ -174,79 +174,40 @@ int Asembler::dodajUBazenLiterala(int& vrednost){
 
 
 
-void Asembler::literalVelikiSkok(int gpr2, int& argument){
+void Asembler::literalVeliki(int gprA, int gprB, int gprC, int argument){
 
 
   int prviPrepravka = trSekcija->LC + 2;
 
-  trSekcija->kod_sekcije.push_back(gpr2<<4);
-  trSekcija->kod_sekcije.push_back(0);
+      trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
+      trSekcija->kod_sekcije.push_back(gprC<<4);
+      trSekcija->kod_sekcije.push_back(0);
 
-  trSekcija->LC +=4;
+      trSekcija->LC +=4;
 
-  int slInstrukcija = trSekcija->LC;
+      int slInstrukcija = trSekcija->LC;
 
-  int pomeraj = dodajUBazenLiterala(argument);
-  
+      int pomeraj = dodajUBazenLiterala(argument);
 
-  pomeraj -= slInstrukcija;
+      pomeraj -= slInstrukcija;
 
-  trSekcija->kod_sekcije[prviPrepravka] |= (pomeraj >> 8) & 0xF;
-  trSekcija->kod_sekcije[prviPrepravka + 1] = (pomeraj & 0xFF);
+      trSekcija->kod_sekcije[prviPrepravka] |= (pomeraj >> 8) & 0xF;
+      trSekcija->kod_sekcije[prviPrepravka + 1] = (pomeraj & 0xFF);
 
 
 }
 
 
 
-void Asembler::literalMaliSkok(int& gpr2, int& argument){
-
-  trSekcija->kod_sekcije[trSekcija->LC] ^= 0b1000; 
-
-  trSekcija->kod_sekcije.push_back(gpr2<<4 | ((argument >> 8) & 0xF));
-  trSekcija->kod_sekcije.push_back(argument & 0xFF);
-
-  trSekcija->LC += 4;
-
-}
-
-
-
-void Asembler::literalVelikiInstrukcija(int gpr2, int& argument){
-
-  // std::cout << gpr2 << " " << argument << std::endl;
-  // std::cout << gpr2 << " " << trSekcija->LC << std::endl;
-
-  trSekcija->kod_sekcije[trSekcija->LC + 1] |= gpr2;
-  trSekcija->kod_sekcije.push_back(0);
-  trSekcija->kod_sekcije.push_back(0);
+void Asembler::literalMali(int gprA, int gprB, int gprC, int argument){
 
   
 
-  int prviPrepravka = trSekcija->LC + 2;
+      trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
+      trSekcija->kod_sekcije.push_back(gprC<<4 | ((argument >> 8) & 0xF));
+      trSekcija->kod_sekcije.push_back(argument & 0xFF);
 
-  trSekcija->LC +=4;
-
-  int slInstrukcija = trSekcija->LC;
-
-  int pomeraj = dodajUBazenLiterala(argument);
-
-  pomeraj -= slInstrukcija;
-
-  trSekcija->kod_sekcije[prviPrepravka] |= (pomeraj >> 8) & 0xF;
-  trSekcija->kod_sekcije[prviPrepravka + 1] = (pomeraj & 0xFF);
-
-
-}
-
-
-void Asembler::literalMaliInstrukcija(int gpr2, int& argument){
-
-  trSekcija->kod_sekcije[trSekcija->LC + 1] |= gpr2;
-  trSekcija->kod_sekcije.push_back((argument >> 8) & 0xF);
-  trSekcija->kod_sekcije.push_back((argument & 0xFF));
-
-  trSekcija->LC += 4;
+      trSekcija->LC += 4;
 
 }
 
@@ -258,7 +219,9 @@ void Asembler::literalMaliInstrukcija(int gpr2, int& argument){
 
 
 
-int Asembler::dodajUBazenLiteralaSimbol(std::string simbol,std::vector<TabelaSimbolaUlaz>::iterator it){
+
+
+int Asembler::dodajUBazenLiteralaSimbol(std::string simbol){
 
   bool flag = false;
 
@@ -299,8 +262,25 @@ int Asembler::dodajUBazenLiteralaSimbol(std::string simbol,std::vector<TabelaSim
 
 
 
+std::vector<TabelaSimbolaUlaz>::iterator Asembler::dodajSimbolUTabeluSimbola(std::string simbol){
 
-void Asembler::simbolNedefinisan(std::string simbol,int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator it){
+  auto it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
+    
+    if (it == tabelaSimbola.end()){ // simbol nije u tabeli
+      int redniBroj = tabelaSimbola.size();
+      tabelaSimbola.push_back(*(new TabelaSimbolaUlaz(simbol, 0 , redniBroj)));
+    }
+  
+  it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
+  return it;
+
+}
+
+
+
+
+
+int Asembler::simbolNedefinisan(std::string simbol,int gprA, int gprB, int gprC){
   int prviPrepravka = trSekcija->LC + 2;
 
         
@@ -312,12 +292,14 @@ void Asembler::simbolNedefinisan(std::string simbol,int gprA, int gprB, int gprC
 
   int slInstrukcija = trSekcija->LC;
 
-  int pomeraj = dodajUBazenLiteralaSimbol(simbol,it);
+  int pomeraj = dodajUBazenLiteralaSimbol(simbol);
 
   pomeraj -= slInstrukcija;
 
   trSekcija->kod_sekcije[prviPrepravka] |= (pomeraj >> 8) & 0xF;
   trSekcija->kod_sekcije[prviPrepravka + 1] = (pomeraj & 0xFF);
+
+  return (pomeraj +=slInstrukcija);
 }
 
 
@@ -397,6 +379,140 @@ void Asembler::srediLokalneSimbole(){
 
 
 
+void Asembler::LD_IMMED(){
+
+      int gprA = argumenti[1]->vrednost;
+
+      if (argumenti[0]->e == Operand::literal){
+
+        int argument = argumenti[0]->vrednost;
+
+
+        if (( argument > 2047) || (argument < -2048) ) { // literal veci od 12 bita
+        
+          
+          trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
+          
+
+          literalVeliki(gprA,15,0,argument);
+          
+        }
+
+
+        else{ // literal manji od 12 bita
+
+          trSekcija->kod_sekcije[trSekcija->LC] |= 0b0001;
+          
+
+          literalMali(gprA,0,0,argument);
+
+        }
+
+
+      }
+
+
+      else { // ako je operand simbol
+        
+        std::string simbol = argumenti[0]->simbol;
+
+        trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
+
+        auto it = dodajSimbolUTabeluSimbola(simbol);
+
+        int instrukcija = trSekcija->LC;
+
+        int pomeraj = simbolNedefinisan(simbol, gprA , 15, 0);
+
+        auto iter = std::find(trSekcija->relokacioni_zapis.begin(),trSekcija->relokacioni_zapis.end(), pomeraj);
+
+        if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "ABS", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0)));
+
+        iter = std::find(trSekcija->relokacioni_zapis.begin(),trSekcija->relokacioni_zapis.end(), pomeraj); // ovo proveri zasto mora da se radi
+        if (iter != trSekcija->relokacioni_zapis.end() && iter->tip == "SYMBOL_MEM") iter->tip = "ABS";
+
+      }
+
+}
+
+
+
+
+
+void Asembler::LD_REG_DIR(){
+
+  int gprB = argumenti[0]->vrednost;
+  int gprA = argumenti[1]->vrednost;
+
+  trSekcija->kod_sekcije[trSekcija->LC] |= 0b0001;
+
+  trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
+  trSekcija->kod_sekcije.push_back(0);
+  trSekcija->kod_sekcije.push_back(0);
+
+  zavrsiInstrukciju();
+}
+
+void Asembler::LD_REG_IND(){
+
+  int gprB = argumenti[0]->vrednost;
+  int gprA = argumenti[1]->vrednost;
+
+  trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
+
+
+  trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
+  trSekcija->kod_sekcije.push_back(0);
+  trSekcija->kod_sekcije.push_back(0);
+
+  zavrsiInstrukciju();
+}
+
+
+void Asembler::LD_REG_IND_POM(int& line_num){
+
+
+
+  trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
+  int gprB = argumenti[0]->vrednost;
+  int gprA = argumenti[1]->vrednost;
+  int disp = argumenti[2]->vrednost;
+
+   if (( disp > 2047) || (disp < -2048) ) {
+   
+    ispisiGresku(line_num);
+   }
+
+  trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
+  trSekcija->kod_sekcije.push_back( (disp>>8) & 0xF);
+  trSekcija->kod_sekcije.push_back(disp & 0xFF);
+
+  zavrsiInstrukciju();
+}
+
+
+
+
+void Asembler::LD_MEM_DIR(){
+
+  LD_IMMED();
+
+  int reg = argumenti[1]->vrednost;
+
+  trSekcija->kod_sekcije.push_back(0x92);
+  trSekcija->kod_sekcije.push_back(reg<<4|reg);
+  trSekcija->kod_sekcije.push_back(0);
+  trSekcija->kod_sekcije.push_back(0);
+
+  zavrsiInstrukciju();
+}
+
+
+
+
+
+
+
 void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, int gpr2, int csr){
 
   if (trSekcija == nullptr){  // instrukcija ne moze da stoji van sekcije
@@ -433,7 +549,7 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case jmp:{
       trSekcija->kod_sekcije.push_back(3<<4|8);
-      InstrukcijaJmp(brLinije);
+      InstrukcijaSkoka(0,0);
       break;
     }
     
@@ -503,21 +619,21 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case beq:{
       trSekcija->kod_sekcije.push_back(3<<4|9);
-      InstrukcijaBeq(gpr1, gpr2);
+      InstrukcijaSkoka(gpr1,gpr2);
       break;
     }
 
 
     case bne:{
       trSekcija->kod_sekcije.push_back(3<<4|10);
-      InstrukcijaBne(gpr1, gpr2);
+      InstrukcijaSkoka(gpr1,gpr2);
       break;
     }
 
 
     case bgt:{
       trSekcija->kod_sekcije.push_back(3<<4|11);
-      InstrukcijaBgt(gpr1, gpr2);
+      InstrukcijaSkoka(gpr1,gpr2);
       break;
     }
 
@@ -534,7 +650,6 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case ld:{
       trSekcija->kod_sekcije.push_back(9<<4);
-
       InstrukcijaLd(brLinije);
       break;
     }

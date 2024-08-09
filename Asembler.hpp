@@ -95,7 +95,7 @@ struct RelokacioniZapisUlaz{
 
 
   bool operator==(const int& uporedi) const { // nalazim sekciju iz tabele simbola
-    return simbolRB == uporedi;
+    return offset == uporedi;
   }
 
 };
@@ -177,17 +177,15 @@ public:
   static void ispisiGresku(int& line_num);
 
 
-  static void literalVelikiSkok(int gpr2, int& argument);
-  static void literalMaliSkok(int& gpr2, int& argument);
+  static void literalVeliki(int gprA, int gprB, int gprC, int argument);
+  static void literalMali(int gprA, int gprB, int gprC, int argument);
 
 
-  static void literalVelikiInstrukcija(int gpr2, int& argument);
-  static void literalMaliInstrukcija(int gpr2, int& argument);
-
+  static std::vector<TabelaSimbolaUlaz>::iterator dodajSimbolUTabeluSimbola(std::string);
 
   static int dodajUBazenLiterala(int& vrednost);
-  static int dodajUBazenLiteralaSimbol(std::string simbol,std::vector<TabelaSimbolaUlaz>::iterator it);
-  static void simbolNedefinisan(std::string simbol, int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator it);
+  static int dodajUBazenLiteralaSimbol(std::string simbol);
+  static int simbolNedefinisan(std::string simbol, int gprA, int gprB, int gprC);
   static void simbolDefinisan(std::string simbol, int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator it);
   
   static void srediLokalneSimbole();
@@ -207,6 +205,11 @@ public:
   static void obradiLabelu(std::string simbol, int& line_num);
 
 
+  static void LD_REG_DIR();
+  static void LD_MEM_DIR();
+  static void LD_IMMED();
+  static void LD_REG_IND();
+  static void LD_REG_IND_POM(int& line_num);
 
   static void InstrukcijaHalt();
   static void InstrukcijaInt();
@@ -219,7 +222,7 @@ public:
   static void InstrukcijaBne(int gpr1, int gpr2);
   static void InstrukcijaBgt(int gpr1, int gor2);
 
-  static void InstrukcijaSkoka(int a, int gpr1, int gpr2);
+  static void InstrukcijaSkoka(int gpr1, int gpr2);
 
 
 

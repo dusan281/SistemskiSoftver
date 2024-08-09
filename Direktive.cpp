@@ -201,7 +201,7 @@ void Asembler::DirektivaEnd(){
     if (i->vezivanje == "GLOB" && i->brSekcije == 0) i->brSekcije = -1; // .global i .extern su alijasi
   }
 
-  srediLokalneSimbole();
+  //srediLokalneSimbole();
 
   for (const auto& sekcija : sveSekcije) {
       Asembler::ispisiKodSekcije(sekcija.second);

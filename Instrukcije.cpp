@@ -186,38 +186,13 @@ void Asembler::InstrukcijaCsrwr(int gpr1, int csr){ // csr <= gpr
 }
 
 
-void Asembler::InstrukcijaBeq(int gpr1, int gpr2){
-
-  InstrukcijaSkoka(1, gpr1, gpr2);
-}
-
-
-
-void Asembler::InstrukcijaBne(int gpr1, int gpr2){
-
-  InstrukcijaSkoka(2, gpr1, gpr2);
-}
-
-
-
-
-void Asembler::InstrukcijaBgt(int gpr1, int gpr2){
-
-  InstrukcijaSkoka(3, gpr1, gpr2);
-}
-
-
-
-
-
-
 
 
 void Asembler::InstrukcijaCall(int& line_num){
 
   InstrukcijaPush(15);
   trSekcija->kod_sekcije.push_back(3<<4|8);
-  InstrukcijaJmp(line_num);
+  InstrukcijaSkoka(0,0);
 
 }
 
@@ -233,28 +208,12 @@ void Asembler::InstrukcijaCall(int& line_num){
 
 
 
-void Asembler::InstrukcijaJmp(int& line_num){
-
-  InstrukcijaSkoka(0, 0, 0);
-  
-}
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-void Asembler::InstrukcijaSkoka(int a, int gpr1, int gpr2){
+void Asembler::InstrukcijaSkoka(int gpr1, int gpr2){
 
   if (argumenti[0]->e == Operand::literal){
     
@@ -263,22 +222,7 @@ void Asembler::InstrukcijaSkoka(int a, int gpr1, int gpr2){
 
     if (( argument > 2047) || (argument < -2048) ) { // literal veci od 12 bita
 
-      int prviPrepravka = trSekcija->LC + 2;
-
-      trSekcija->kod_sekcije.push_back(15<<4|gpr1);
-      trSekcija->kod_sekcije.push_back(gpr2<<4);
-      trSekcija->kod_sekcije.push_back(0);
-
-      trSekcija->LC +=4;
-
-      int slInstrukcija = trSekcija->LC;
-
-      int pomeraj = dodajUBazenLiterala(argument);
-
-      pomeraj -= slInstrukcija;
-
-      trSekcija->kod_sekcije[prviPrepravka] |= (pomeraj >> 8) & 0xF;
-      trSekcija->kod_sekcije[prviPrepravka + 1] = (pomeraj & 0xFF);
+      literalVeliki(15, gpr1, gpr2, argument);
      
     } 
 
@@ -286,52 +230,43 @@ void Asembler::InstrukcijaSkoka(int a, int gpr1, int gpr2){
     else{ // literal nije veci od 12 bita
 
       trSekcija->kod_sekcije[trSekcija->LC] ^= 0b1000; 
-
-      trSekcija->kod_sekcije.push_back(15<<4|gpr1);
-      trSekcija->kod_sekcije.push_back(gpr2<<4 | ((argument >> 8) & 0xF));
-      trSekcija->kod_sekcije.push_back(argument & 0xFF);
-
-      trSekcija->LC += 4;
+      literalMali(0, gpr1, gpr2, argument);
     }
 
 
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
   else { // ako je operand simbol
 
     std::string simbol = argumenti[0]->simbol;
 
-    auto it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
+    auto it = dodajSimbolUTabeluSimbola(simbol); //imam iterator koji pokazuje na simbol u tabeli simbola
+
     
-    if (it == tabelaSimbola.end()){ // simbol nije u tabeli
-      int redniBroj = tabelaSimbola.size();
-      tabelaSimbola.push_back(*(new TabelaSimbolaUlaz(simbol, 0 , redniBroj, 0)));
-    }
 
-    int instrukcija = trSekcija->LC;
 
-    it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
+    if (it->brSekcije != trSekcija->brSekcije ){ //slucaj kada simbol nije definisan u mojo sekciji
 
-    if (it == tabelaSimbola.end() || ( it != tabelaSimbola.end() && it->brSekcije != trSekcija->brSekcije)){ //slucaj kada simbol nije definisan u mojo sekciji
+        
 
-        simbolNedefinisan(simbol,15, gpr1, gpr2, it);
+        int pomeraj = simbolNedefinisan(simbol,15, gpr1, gpr2);
 
-        trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(trSekcija->LC - 4, "BACKPATCH", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0)));
 
-        if (it->brSekcije != -1){
+        
+        auto iter = std::find(trSekcija->relokacioni_zapis.begin(),trSekcija->relokacioni_zapis.end(), pomeraj);
+        int instrukcija = trSekcija->LC;
+        
+        
+        if (it->brSekcije == 0){
+
+          
+
           it->backpatch.push_back({trSekcija->brSekcije, instrukcija});
+          if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "SYMBOL_MEM", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0)));
+        }
+
+        else {
+          if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "ABS", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0)));
         }
 
         
@@ -366,91 +301,41 @@ void Asembler::InstrukcijaSkoka(int a, int gpr1, int gpr2){
 
 void Asembler::InstrukcijaLd(int& line_num){
 
+ 
+
   switch (adresiranje)
         {
           case (Adresiranje::REG_DIR):{
             
-            int gprB = argumenti[0]->vrednost;
-            int gprA = argumenti[1]->vrednost;
-
-            trSekcija->kod_sekcije[trSekcija->LC] |= 0b0001;
-
-            trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
-            trSekcija->kod_sekcije.push_back(0);
-            trSekcija->kod_sekcije.push_back(0);
-
-            zavrsiInstrukciju();
+            LD_REG_DIR();
             break;
           }
 
 
           case Adresiranje::IMMED:{
             
-            int gprA = argumenti[1]->vrednost;
-
-            if (argumenti[0]->e == Operand::literal){
-
-              int argument = argumenti[0]->vrednost;
-
-
-              if (( argument > 2047) || (argument < -2048) ) { // literal veci od 12 bita
-              
-                
-                trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
-                trSekcija->kod_sekcije.push_back(gprA<<4);
-
-                literalVelikiInstrukcija(15,argument);
-                
-              }
-
-
-              else{ // literal manji od 12 bita
-
-                trSekcija->kod_sekcije[trSekcija->LC] |= 0b0001;
-                trSekcija->kod_sekcije.push_back(gprA<<4);
-
-                literalMaliInstrukcija(0,argument);
-
-              }
-
-
-            }
-
-
-            else { // ako je operand simbol
-
-              std::string simbol = argumenti[0]->simbol;
-
-              trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
-
-              auto it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
-              
-              if (it == tabelaSimbola.end()){ // simbol nije u tabeli
-                int redniBroj = tabelaSimbola.size();
-                tabelaSimbola.push_back(*(new TabelaSimbolaUlaz(simbol, 0 , redniBroj, 0)));
-              }
-
-              int instrukcija = trSekcija->LC;
-
-              it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
-
-              simbolNedefinisan(simbol, gprA , 15, 0, it);
-
-              bool flag = false;
-              for (int i = 0 ; i < trSekcija->relokacioni_zapis.size(); i++){
-                if (trSekcija->relokacioni_zapis[i].simbolRB == it->redniBroj) flag = true;
-              }
-
-              if (!flag){ 
-
-                  trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(trSekcija->LC - 4, "ABS", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0)));
-
-              }
-
-          }
+            LD_IMMED();
+            break;
           }
             /* code */
           
+          case Adresiranje::MEM_DIR:{
+
+            LD_MEM_DIR();
+            break;
+          }
+
+          case Adresiranje::REG_IND:{
+
+            LD_REG_IND();
+          }
+
+          case Adresiranje::REG_IND_POM:{
+
+            LD_REG_IND_POM(line_num);
+          }
+          
+
           default:
             break;
         }

@@ -3,8 +3,6 @@
   int line_num = 1;
 %}
 
-ALO BREEEEEE
-UHU
 
 
 LSQB  "["

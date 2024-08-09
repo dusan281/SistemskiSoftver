@@ -1,21 +1,13 @@
-.section drugaSekcija
-
-
-maca:
-ld $aca, %r1
-ld $aca, %r1
-ld $maca, %r1
-
+.section prvaSekcija
 
 jmp aca
-
+ld $aca, %r1
+ld aca, %r9
+ld 5, %r9
+ld mika, %r4
 
 aca:
 
 
-
-.section prvaSekcija
-jmp aca
-ld $0x12345678, %r2
-
+.global mika, aca
 .end
