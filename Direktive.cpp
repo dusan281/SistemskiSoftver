@@ -13,19 +13,6 @@ void Asembler::DirektivaSkip(int& vrednost, int& line_num){
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 void Asembler::DirektivaSection(std::string simbol, int& line_num){
 
   zavrsiSekciju();
@@ -45,12 +32,6 @@ void Asembler::DirektivaSection(std::string simbol, int& line_num){
   
   tabelaSimbola.push_back(*(new TabelaSimbolaUlaz(simbol,redniBroj,redniBroj,0,"SCTN"))); //dodavanje u tabelu simbola
 }
-
-
-
-
-
-
 
 void Asembler::DirektivaGlobal(int& line_num){
 
@@ -79,16 +60,6 @@ void Asembler::DirektivaGlobal(int& line_num){
   argumenti.shrink_to_fit();  
 }
 
-
-
-
-
-
-
-
-
-
-
 void Asembler::DirektivaExtern(int& line_num){
   for (int i = 0; i < argumenti.size(); i++){
     std::string simbol = argumenti[i]->simbol;
@@ -111,16 +82,6 @@ void Asembler::DirektivaExtern(int& line_num){
   argumenti.clear();
   argumenti.shrink_to_fit();
 }
-
-
-
-
-
-
-
-
-
-
 
 void Asembler::DirektivaWord(int& line_num){
   
@@ -179,20 +140,6 @@ void Asembler::DirektivaWord(int& line_num){
   argumenti.shrink_to_fit();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void Asembler::DirektivaEnd(){
   
   zavrsiSekciju();
@@ -201,7 +148,7 @@ void Asembler::DirektivaEnd(){
     if (i->vezivanje == "GLOB" && i->brSekcije == 0) i->brSekcije = -1; // .global i .extern su alijasi
   }
 
-  //srediLokalneSimbole();
+  srediLokalneSimbole();
 
   for (const auto& sekcija : sveSekcije) {
       Asembler::ispisiKodSekcije(sekcija.second);
@@ -216,27 +163,12 @@ void Asembler::DirektivaEnd(){
         std::cout << ulaz.simbol << " " << ulaz.brSekcije << " " << ulaz.vrednost << " " << ulaz.tip << " " << ulaz.vezivanje << " " << ulaz.redniBroj << " " << ulaz.velicina << std::endl;
 
         for (const auto& it : ulaz.backpatch){
-          std::cout << it.first << " " << it.second << std::endl;
+          std::cout << it.sekcija << " " << it.offset << " " << it.instrukcija << std::endl;
         }
   }
 
   
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void Asembler::obradiLabelu(std::string simbol, int& line_num){
 

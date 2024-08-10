@@ -16,10 +16,12 @@ enum Adresiranje{
   MEM_DIR,
   MEM_IND,
   IMMED,
-  REG_IND_POM
+  REG_IND_POM,
+  LD_IMMED,
+  STORE_MEM_DIR,
+  SKOK,
+  POZIV_POTPROGRAM
 };
-
-
 
 enum Token_Instrukcija{
   halt = 0,
@@ -53,11 +55,7 @@ enum Token_Instrukcija{
 enum Operand{
   literal = 0,
   simbol,
-  gprX,
-  csrX
 };
-
-
 
 struct Argument{
   Operand e;
@@ -80,11 +78,6 @@ struct Argument{
   }
 };
 
-
-
-
-
-
 struct RelokacioniZapisUlaz{
   int offset;
   std::string tip;
@@ -99,8 +92,6 @@ struct RelokacioniZapisUlaz{
   }
 
 };
-
-
 
 struct Sekcija{
   int LC;
@@ -118,7 +109,17 @@ struct Sekcija{
   }
 };
 
+struct BackpatchUlaz{
+  int sekcija;
+  int offset;
+  std::string instrukcija;
 
+  BackpatchUlaz(int sekcija, int offset, std::string instrukcija){
+    this->instrukcija = instrukcija;
+    this->offset = offset;
+    this->sekcija = sekcija;
+  }
+};
 
 struct TabelaSimbolaUlaz{
   std::string simbol;
@@ -128,7 +129,7 @@ struct TabelaSimbolaUlaz{
   std::string vezivanje;
   int redniBroj;
   int velicina;
-  std::vector<std::pair<int,int>> backpatch;
+  std::vector<BackpatchUlaz> backpatch;
 
   TabelaSimbolaUlaz(std::string simbol, int brSekcije, int redniBroj, int vrednost = 0, std::string tip = "NOTYP", std::string vezivanje = "LOC", int velicina = 0){
     this->simbol = simbol;
@@ -150,11 +151,6 @@ struct TabelaSimbolaUlaz{
   }
 };
 
-
-
-
-
-
 class Asembler{
 
 public:
@@ -168,7 +164,7 @@ public:
   static std::vector<TabelaSimbolaUlaz> tabelaSimbola;
 
 
-  static void dodajUListuArgumenata(Argument* arg);
+  static void dodajUListuArgumenata(Argument* arg,int pozicija = -1);
 
   static void ispisiListuSimbola();
   static void ispisiListuSimbolaIliLiterala();
@@ -186,8 +182,10 @@ public:
   static int dodajUBazenLiterala(int& vrednost);
   static int dodajUBazenLiteralaSimbol(std::string simbol);
   static int simbolNedefinisan(std::string simbol, int gprA, int gprB, int gprC);
-  static void simbolDefinisan(std::string simbol, int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator it);
+  static void simbolDefinisan(int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator it);
   
+  static bool izbrisiRelokacioniZapis(RelokacioniZapisUlaz zapis);
+
   static void srediLokalneSimbole();
 
 
@@ -205,11 +203,18 @@ public:
   static void obradiLabelu(std::string simbol, int& line_num);
 
 
-  static void LD_REG_DIR();
+  static void LD_REG_DIR(int gprA, int gprB);
   static void LD_MEM_DIR();
-  static void LD_IMMED();
-  static void LD_REG_IND();
+  static void resiSimbolLiteral(int gprA, int gprB, int gprC, Argument* arg);
+  static void LD_REG_IND(int gprA, int gprB);
   static void LD_REG_IND_POM(int& line_num);
+
+  static void ST_REG_DIR(int& gprA);
+  static void ST_MEM_DIR(int& gprA);
+  static void ST_REG_IND(int gprA, int gprC);
+  static void ST_REG_IND_POM(int gprA, int gprB, int gprC, int& line_num);
+
+
 
   static void InstrukcijaHalt();
   static void InstrukcijaInt();
@@ -227,7 +232,7 @@ public:
 
 
   static void InstrukcijaLd(int& line_num);
-  static void InstrukcijaSt();
+  static void InstrukcijaSt(int& line_num);
 
 
   static void InstrukcijaAdd(int gpr1, int gpr2);
@@ -250,7 +255,11 @@ public:
   static void InstrukcijaPop(int gpr1);
 
 
-  static void napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1 = -1, int gpr2 = -1, int csr = -1);
+  static void napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1 = -1, int gpr2 = -1, int gpr3 = -1, int csr = -1);
+
+  static void relokacijaInstrukcije(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator it);
+
+  static void relokacijaSkok(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator it, int instrukcija);
 
 
 };

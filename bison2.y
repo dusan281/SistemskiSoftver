@@ -188,7 +188,7 @@ instruction:
       }
     | LD operand_instrukcija COMMA REG_VALUE { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $4)); Asembler::napraviInstrukciju(Token_Instrukcija::ld, line_num); } 
     
-    | ST REG_VALUE COMMA operand_instrukcija { printf("St \n"); }
+    | ST REG_VALUE COMMA operand_instrukcija { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2),0); Asembler::napraviInstrukciju(Token_Instrukcija::st, line_num); }
 
     | CSR_RD CSR COMMA REG_VALUE { 
       Asembler::napraviInstrukciju(Token_Instrukcija::csrrd, line_num, $4, -1, $2);
@@ -200,8 +200,8 @@ instruction:
     ;
 
 operand_skok:
-    MEM_LITERAL { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1));}
-    | SYMBOL_MEM { Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0));}
+    MEM_LITERAL { Asembler::Asembler::postaviAdresiranje(Adresiranje::SKOK); Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1));}
+    | SYMBOL_MEM { Asembler::Asembler::postaviAdresiranje(Adresiranje::SKOK); Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0));}
 
 
 operand_instrukcija:
@@ -217,6 +217,8 @@ operand_instrukcija:
 ENDLS:
     ENDLS ENDL
     | ENDL
+
+
 ;
 %%
 
