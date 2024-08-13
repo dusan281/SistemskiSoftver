@@ -30,7 +30,7 @@ void Asembler::InstrukcijaIret(){
 // status = mem[sp-4]
   
   trSekcija->kod_sekcije.push_back(9<<4|6);
-  trSekcija->kod_sekcije.push_back(14);
+  trSekcija->kod_sekcije.push_back(0 << 14);
   trSekcija->kod_sekcije.push_back(15);
   trSekcija->kod_sekcije.push_back(15<<4|12);
 

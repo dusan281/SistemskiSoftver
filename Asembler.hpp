@@ -2,6 +2,8 @@
 #define _ASEMBLER_HPP
 
 #include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -70,7 +72,6 @@ struct Argument{
 
   bool operator==(const Argument& uporedi) const { // nalazim sekciju iz tabele simbola
     return vrednost == uporedi.vrednost || simbol == uporedi.simbol;
-    std::cout<< vrednost << " " << uporedi.vrednost << std::endl;
   }
 
   bool operator==(std::string uporedi){
@@ -83,8 +84,9 @@ struct RelokacioniZapisUlaz{
   std::string tip;
   int simbolRB;
   int dodatak;
+  std::string simbol;
 
-  RelokacioniZapisUlaz(int offset, std::string tip, int simbolRB, int dodatak) : offset{offset}, tip{tip}, simbolRB{simbolRB}, dodatak{dodatak} {}
+  RelokacioniZapisUlaz(int offset, std::string tip, int simbolRB, int dodatak, std::string simbol) : offset{offset}, tip{tip}, simbolRB{simbolRB}, dodatak{dodatak}, simbol{simbol} {}
 
 
   bool operator==(const int& uporedi) const { // nalazim sekciju iz tabele simbola
@@ -96,13 +98,27 @@ struct RelokacioniZapisUlaz{
 struct Sekcija{
   int LC;
   int brSekcije;
+  std::string imeSekcije;
+  uint32_t startnaAdresa;
   std::vector<std::uint8_t> kod_sekcije;
   std::vector<RelokacioniZapisUlaz> relokacioni_zapis;
   std::map<int, Argument*> promenljive_bazen; // cuvam offset od pocetka sekcije i vrednost
 
-  Sekcija(int brSekcije){
+  Sekcija(int brSekcije, std::string imeSekcije){
     this->LC = 0;
+    this->startnaAdresa = 0;
     this->brSekcije = brSekcije;
+    this->imeSekcije = imeSekcije;
+    this->kod_sekcije = {};
+    this->relokacioni_zapis = {};
+    this->promenljive_bazen = {};
+  }
+
+  Sekcija(){
+    this->LC = 0;
+    this->startnaAdresa = 0;
+    this->brSekcije = brSekcije;
+    this->imeSekcije = imeSekcije;
     this->kod_sekcije = {};
     this->relokacioni_zapis = {};
     this->promenljive_bazen = {};
@@ -155,10 +171,17 @@ class Asembler{
 
 public:
 
+  static std::fstream outputFile; 
+  static std::fstream outputFileBinary;
   static std::vector<Argument*> argumenti;
   static std::map<int,Sekcija*> sveSekcije;
   static Sekcija* trSekcija;
   static Adresiranje adresiranje;
+
+
+  static char* outputFileName;
+  static char* outputBinaryName;
+
 
 
   static std::vector<TabelaSimbolaUlaz> tabelaSimbola;
@@ -185,6 +208,7 @@ public:
   static void simbolDefinisan(int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator it);
   
   static bool izbrisiRelokacioniZapis(RelokacioniZapisUlaz zapis);
+  static bool izbrisiSimbolIzTabeleSimbola(TabelaSimbolaUlaz ulaz);
 
   static void srediLokalneSimbole();
 
@@ -261,6 +285,7 @@ public:
 
   static void relokacijaSkok(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator it, int instrukcija);
 
+  static void ispisiIzlazneFajlove();
 
 };
 

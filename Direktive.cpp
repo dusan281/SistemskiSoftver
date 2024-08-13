@@ -26,7 +26,7 @@ void Asembler::DirektivaSection(std::string simbol, int& line_num){
   int redniBroj = tabelaSimbola.size();
 
   
-  trSekcija = new Sekcija(redniBroj);
+  trSekcija = new Sekcija(redniBroj,simbol);
   sveSekcije.insert({redniBroj,trSekcija});
 
   
@@ -116,12 +116,12 @@ void Asembler::DirektivaWord(int& line_num){
         int redniBroj = tabelaSimbola.size();
         tabelaSimbola.push_back(*(new TabelaSimbolaUlaz(simbol, 0, redniBroj)));
 
-        trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(0,"ABS",redniBroj,0)));
+        trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(0,"ABS",redniBroj,0, simbol)));
       }
 
       else{ // simbol se nalazi u tabeli simbola
         
-        trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(trSekcija->LC,"ABS",it->redniBroj,0)));
+        trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(trSekcija->LC,"ABS",it->redniBroj,0, simbol)));
 
 
       }
@@ -141,7 +141,7 @@ void Asembler::DirektivaWord(int& line_num){
 }
 
 void Asembler::DirektivaEnd(){
-  
+
   zavrsiSekciju();
 
   for (auto i = tabelaSimbola.begin(); i != tabelaSimbola.end(); i++){
@@ -150,22 +150,8 @@ void Asembler::DirektivaEnd(){
 
   srediLokalneSimbole();
 
-  for (const auto& sekcija : sveSekcije) {
-      Asembler::ispisiKodSekcije(sekcija.second);
-      std::cout << std::endl << std:: endl << std::endl << std:: endl;
-  }
-
-  std::cout << std::endl << std:: endl;
   
-  std::cout<< "Simbol     Broj_sekcije     Vrednost     Tip       Vezivanje      Broj      Velicina" << std::endl;
-
-  for (const auto& ulaz : tabelaSimbola) {
-        std::cout << ulaz.simbol << " " << ulaz.brSekcije << " " << ulaz.vrednost << " " << ulaz.tip << " " << ulaz.vezivanje << " " << ulaz.redniBroj << " " << ulaz.velicina << std::endl;
-
-        for (const auto& it : ulaz.backpatch){
-          std::cout << it.sekcija << " " << it.offset << " " << it.instrukcija << std::endl;
-        }
-  }
+  ispisiIzlazneFajlove();
 
   
 }

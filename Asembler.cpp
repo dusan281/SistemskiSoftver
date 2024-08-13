@@ -6,8 +6,15 @@ Sekcija* Asembler::trSekcija = nullptr;
 std::map<int, Sekcija*> Asembler::sveSekcije = {};
 std::vector<TabelaSimbolaUlaz> Asembler::tabelaSimbola = {*(new TabelaSimbolaUlaz("",0,0))};
 
+
+char* Asembler::outputFileName = nullptr;
+char* Asembler::outputBinaryName = nullptr;
+
+
 Adresiranje Asembler::adresiranje = Adresiranje::MEM_DIR;
 
+std::fstream Asembler::outputFile;
+std::fstream Asembler::outputFileBinary;
 
 
 void Asembler::postaviAdresiranje(enum Adresiranje a){
@@ -38,33 +45,81 @@ void Asembler::ispisiGresku(int& line_num){
 }
 
 void Asembler::ispisiKodSekcije(Sekcija* tr){
-  std::cout << "Nalazim se u sekciji velicine " << tr->LC << std::endl ;
+  outputFile << "Nalazim se u sekciji " << tr->imeSekcije << std::endl ;
+
+  int duzina_imena_sekcije = tr->imeSekcije.size();
+  outputFileBinary.write((char*)(&duzina_imena_sekcije), sizeof(int)); //duzina imena sekcije
+
+  outputFileBinary.write(tr->imeSekcije.c_str(), tr->imeSekcije.size()); // ime sekcije
+
+  //int redniBroj_sekcije = tr->brSekcije;
+  //outputFileBinary.write((char*)(&redniBroj_sekcije), sizeof(int)); // redni broj sekcije
+
+  int velicina_sekcije = tr->LC;
+  outputFileBinary.write((char*)(&velicina_sekcije), sizeof(int)); // velicina sekcije
+
+
   for (int i = 0 ; i < tr->kod_sekcije.size(); i++){
-    if (i % 4 == 0) std::cout<<std::endl;
-    std::cout << std::hex << static_cast<int>(tr->kod_sekcije[i]) << " ";
+    if (i % 4 == 0) outputFile<<std::endl;
+    outputFile << std::hex << static_cast<int>(tr->kod_sekcije[i]) << " ";
+
+    outputFileBinary.write((char*)(&tr->kod_sekcije[i]), sizeof(uint8_t)); // ispisujem i binarni fajl svaki bajt koda sekcije
     
   }
-  std::cout << std::endl;
+  outputFile << std::endl << std::endl << std::endl;
 
-  std::cout << " RELOKACIONI ZAPIS"<<std::endl;
+  outputFile << " RELOKACIONI ZAPIS"<<std::endl;
+
+  int nameWidth = 20;
+  const char separator = ' ';
+
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "OFFSET";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "TIP";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "SIMBOL";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "DODATAK";
+  outputFile<<std::endl;
   
-  std::cout << "OFFSET    TIP   SIMBOL    DODATAK" << std::endl;
+
+  int duzina_relokacionih_zapisa = tr->relokacioni_zapis.size();
+  outputFileBinary.write((char*)(&duzina_relokacionih_zapisa), sizeof(int));  // koliko ime relokacionih zapisa
+
 
   for (int i = 0; i < tr->relokacioni_zapis.size(); i++){
-    std::cout<< tr->relokacioni_zapis[i].offset << " " << tr->relokacioni_zapis[i].tip << " " << tr->relokacioni_zapis[i].simbolRB << " " << tr->relokacioni_zapis[i].dodatak << std::endl;
+    outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << tr->relokacioni_zapis[i].offset;
+    outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << tr->relokacioni_zapis[i].tip;
+    outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << tr->relokacioni_zapis[i].simbolRB;
+    outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << tr->relokacioni_zapis[i].dodatak;
+
+    int offset = tr->relokacioni_zapis[i].offset;
+    int simbolRB = tr->relokacioni_zapis[i].simbolRB;
+    int dodatak = tr->relokacioni_zapis[i].dodatak;
+    std::string simbol = tr->relokacioni_zapis[i].simbol;
+    int duzina_imena_simbola = simbol.size();
+
+    outputFileBinary.write((char*)(&offset), sizeof(int));
+    outputFileBinary.write((char*)(&simbolRB), sizeof(int));
+    outputFileBinary.write((char*)(&dodatak), sizeof(int));
+    outputFileBinary.write((char*)(&duzina_imena_simbola), sizeof(int));
+    outputFileBinary.write(simbol.c_str(), simbol.size());
+
+    outputFile<<std::endl;
   }
 
-  std::cout << std::endl;
+  outputFile << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl;
 
-  std::cout << " BAZEN LITERALA"<<std::endl;
-  std::cout << " Vrednost" << std::endl;
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "BAZEN LITERALA";
+  outputFile << std::endl;
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "ADRESA";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "VREDNOST"; 
 
+  outputFile << std::endl;
   for (auto it = tr->promenljive_bazen.begin(); it != tr->promenljive_bazen.end(); it++){
-    std::cout<< it->first << " " << it->second->vrednost << std::endl;
-  }
+    outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->first;
+    if (it->second->e == Operand::literal) outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->second->vrednost;
+    if (it->second->e == Operand::simbol) outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->second->simbol;
     
-  
-
+    outputFile << std::endl;
+  }
 }
 
 void Asembler::dodajPodatakUKodSekcije(int& vrednost){
@@ -207,11 +262,11 @@ std::vector<TabelaSimbolaUlaz>::iterator Asembler::dodajSimbolUTabeluSimbola(std
 
 int Asembler::simbolNedefinisan(std::string simbol,int gprA, int gprB, int gprC){
   int prviPrepravka = trSekcija->LC + 2;
-
         
   trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
   trSekcija->kod_sekcije.push_back(gprC<<4);
   trSekcija->kod_sekcije.push_back(0);
+
 
   trSekcija->LC +=4;
 
@@ -219,9 +274,10 @@ int Asembler::simbolNedefinisan(std::string simbol,int gprA, int gprB, int gprC)
 
   int pomeraj = dodajUBazenLiteralaSimbol(simbol);
 
+
   pomeraj -= slInstrukcija;
 
-  trSekcija->kod_sekcije[prviPrepravka] |= (pomeraj >> 8) & 0xF;
+  trSekcija->kod_sekcije[prviPrepravka] |= ((pomeraj >> 8) & 0xF);
   trSekcija->kod_sekcije[prviPrepravka + 1] = (pomeraj & 0xFF);
 
   return (pomeraj +=slInstrukcija);
@@ -259,7 +315,7 @@ void Asembler::srediLokalneSimbole(){
           
           if (back->instrukcija == "JMP") trSekcija->kod_sekcije[back->offset] ^= 0b1000; 
           if (back->instrukcija == "CALL") trSekcija->kod_sekcije[back->offset] ^= 0b0001;
-          trSekcija->kod_sekcije[back->offset + 2] = (disp >> 8) & 0xF;
+          trSekcija->kod_sekcije[back->offset + 2] |= ((disp >> 8) & 0xF);
           trSekcija->kod_sekcije[back->offset + 3] = disp & 0xFF;
 
         }
@@ -305,13 +361,10 @@ void Asembler::srediLokalneSimbole(){
 
     itSekcije->second->relokacioni_zapis.erase(std::remove_if(itSekcije->second->relokacioni_zapis.begin(),itSekcije->second->relokacioni_zapis.end(), izbrisiRelokacioniZapis), itSekcije->second->relokacioni_zapis.end());
 
-      
+    
   } 
 
-
-
-
-  }
+}
 
 
 
@@ -320,11 +373,16 @@ bool Asembler::izbrisiRelokacioniZapis(RelokacioniZapisUlaz zapis){
   return zapis.tip == "SYMBOL_MEM";
 }
 
+bool Asembler::izbrisiSimbolIzTabeleSimbola(TabelaSimbolaUlaz ulaz){
+  return ulaz.vezivanje == "LOC" && ulaz.tip == "NOTYP";
+}
+
+
 void Asembler::relokacijaInstrukcije(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator it){
 
   auto iter = std::find(trSekcija->relokacioni_zapis.begin(),trSekcija->relokacioni_zapis.end(), pomeraj);
 
-  if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "ABS", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0)));
+  if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "ABS", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0, it->simbol)));
 
   iter = std::find(trSekcija->relokacioni_zapis.begin(),trSekcija->relokacioni_zapis.end(), pomeraj); // ovo proveri zasto mora da se radi
   if (iter != trSekcija->relokacioni_zapis.end() && iter->tip == "SYMBOL_MEM") iter->tip = "ABS";
@@ -342,11 +400,11 @@ void Asembler::relokacijaSkok(int pomeraj, std::vector<TabelaSimbolaUlaz>::itera
     if (adresiranje == Adresiranje::SKOK) it->backpatch.push_back(*(new BackpatchUlaz(trSekcija->brSekcije, instrukcija, "JMP")));
     if (adresiranje == Adresiranje::POZIV_POTPROGRAM) it->backpatch.push_back(*(new BackpatchUlaz(trSekcija->brSekcije, instrukcija, "CALL")));
 
-    if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "SYMBOL_MEM", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0)));
+    if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "SYMBOL_MEM", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0, it->simbol)));
   }
 
   else {
-    if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "ABS", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0)));
+    if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(*(new RelokacioniZapisUlaz(pomeraj, "ABS", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0, it->simbol)));
   }
 }
 
@@ -452,6 +510,7 @@ void Asembler::resiSimbolLiteral(int gprA, int gprB, int gprC, Argument* promenl
             if (it->brSekcije != trSekcija->brSekcije ){ //slucaj kada simbol nije definisan u mojo sekciji
 
               pomeraj = simbolNedefinisan(simbol,15, gprB, gprC);
+              
               relokacijaSkok(pomeraj,it,instrukcija);            
               }
 
@@ -587,6 +646,7 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case iret:{
       InstrukcijaIret();
+      zavrsiInstrukciju();
       break;
     }
 
@@ -672,6 +732,7 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case beq:{
       trSekcija->kod_sekcije.push_back(3<<4|9);
+      std::cout << gpr1 << " " << gpr2 << std::endl;
       resiSimbolLiteral(0,gpr1,gpr2,argumenti[0]);
       break;
     }
@@ -679,7 +740,8 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case bne:{
       trSekcija->kod_sekcije.push_back(3<<4|10);
-      resiSimbolLiteral(0,gpr1,gpr2,argumenti[0]);;
+      resiSimbolLiteral(0,gpr1,gpr2,argumenti[0]);
+      std::cout << gpr1 << " " << gpr2 << std::endl;
       break;
     }
 
@@ -721,4 +783,107 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
   argumenti.clear();
   argumenti.shrink_to_fit();
+}
+
+
+
+
+void Asembler::ispisiIzlazneFajlove(){
+  if (!outputFileName || !outputBinaryName) {
+    std::cerr << "Both -o <output_file> and <input_file> must be specified." << std::endl;      
+  }
+
+  outputFile.open(outputFileName, std::ios::out | std::ios::app);
+    
+  outputFileBinary.open(outputBinaryName, std::ios::out | std::ios::binary);
+    
+  if (!outputFileName) {
+      std::cerr << "I can't create " << outputFileName << "!" << std::endl;
+      outputFile.close();
+      outputFileBinary.close();
+  }
+
+
+
+  int broj_sekcija = sveSekcije.size();
+  outputFileBinary.write((char*)(&broj_sekcija), sizeof(int) );   // ukupan broj sekcija
+
+
+  for (const auto& sekcija : sveSekcije) {
+      Asembler::ispisiKodSekcije(sekcija.second);
+      outputFile << std::endl << std:: endl << std::endl << std:: endl;
+  }
+
+  outputFile << std::endl << std:: endl;
+
+  int nameWidth = 20;
+  const char separator = ' ';
+
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "SIMBOL";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "BROJ SEKCIJE";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "VREDNOST";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "TIP";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "VEZIVANJE";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "BROJ";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "VELICINA";
+  outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "BACKPATCH";
+  outputFile<<std::endl;
+  
+
+  for (const auto& ulaz : tabelaSimbola) {
+
+        outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.simbol;
+        outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.brSekcije;
+        outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.vrednost;
+        outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.tip;
+        outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.vezivanje;
+        outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.redniBroj;
+        outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.velicina;
+
+        for (const auto& it : ulaz.backpatch){
+
+          outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it.sekcija;
+          outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it.offset;
+          outputFile << std::endl;
+        
+
+        }
+      outputFile << std::endl;
+
+      
+      
+  }
+
+  
+  int brSekcija = sveSekcije.size();
+
+
+  tabelaSimbola.erase(std::remove_if(tabelaSimbola.begin(), tabelaSimbola.end(), izbrisiSimbolIzTabeleSimbola), tabelaSimbola.end());
+
+
+
+  int duzina_tabele_simbola = tabelaSimbola.size();
+  outputFileBinary.write((char*)(&duzina_tabele_simbola), sizeof(int));
+
+  for (int i = 0 ; i < tabelaSimbola.size(); i++){
+    std::string ime_simbola = tabelaSimbola[i].simbol;
+    int duzina_imena_simbola = ime_simbola.size();
+
+    outputFileBinary.write((char*)(&duzina_imena_simbola), sizeof(int));
+    outputFileBinary.write(ime_simbola.c_str(), duzina_imena_simbola);
+
+    int broj_sekcije = tabelaSimbola[i].brSekcije;
+    outputFileBinary.write((char*)(&broj_sekcije), sizeof(int));
+
+    int vrednost = tabelaSimbola[i].vrednost;
+    outputFileBinary.write((char*)(&vrednost), sizeof(int));
+
+    int duzina_tipa = tabelaSimbola[i].tip.size();
+    outputFileBinary.write((char*)(&duzina_tipa), sizeof(int));
+    outputFileBinary.write(tabelaSimbola[i].tip.c_str(), duzina_tipa);
+
+    int redniBroj = tabelaSimbola[i].redniBroj;
+    outputFileBinary.write((char*)(&redniBroj), sizeof(int));
+
+  }
 }

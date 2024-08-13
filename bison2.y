@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "Asembler.hpp"
+#include "Linker.hpp"
 #include <stdexcept>
 using namespace std;
 #include <sstream>
@@ -33,7 +33,7 @@ using namespace std;
 %%
 
 program:
-    program line END {Asembler::DirektivaEnd();;printf("End directive\n"); printf("Kraj programa \n");}
+    program line END {Asembler::DirektivaEnd();}
     | program line
     | line
     ;
@@ -191,11 +191,11 @@ instruction:
     | ST REG_VALUE COMMA operand_instrukcija { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2),0); Asembler::napraviInstrukciju(Token_Instrukcija::st, line_num); }
 
     | CSR_RD CSR COMMA REG_VALUE { 
-      Asembler::napraviInstrukciju(Token_Instrukcija::csrrd, line_num, $4, -1, $2);
+      Asembler::napraviInstrukciju(Token_Instrukcija::csrrd, line_num, $4, -1,-1, $2);
       }
 
     | CSR_WR REG_VALUE COMMA CSR { 
-      Asembler::napraviInstrukciju(Token_Instrukcija::csrwr, line_num, $2, -1, $4);
+      Asembler::napraviInstrukciju(Token_Instrukcija::csrwr, line_num, $2, -1, -1, $4);
       }
     ;
 
@@ -222,29 +222,80 @@ ENDLS:
 ;
 %%
 
-int main(int, char**) {
-  // open a file handle to a particular file:
-  FILE *myfile = fopen("a.snazzle.file", "r");
-  // make sure it's valid:
-  if (!myfile) {
-    printf("I can't open a.snazzle.file!\n");
-    return -1;
-  }
-  // Set flex to read from it instead of defaulting to STDIN:
-  yyin = myfile;
+#include <iostream>
+#include <fstream>
 
-  // Parse through the input:
-  try{
-    std::cout << std::hex;
-    yyparse();
-  } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
+extern "C" {
+    FILE* outputFile;  // Izlazni tok
+}
+
+int main(int argc, char *argv[]) {
+    const char* inputFile = nullptr;
+    
+    if (strcmp(argv[0], "./asembler") == 0){    // ako pokrecem asembler iz komandne linije
+
+
+
+                  for (int i = 1; i < argc; ++i) {
+                    if (strcmp(argv[i], "-o") == 0) {
+                        if (i + 1 < argc) {
+                            Asembler::outputFileName = argv[++i];
+                            Asembler::outputBinaryName = argv[++i];
+                        } else {
+                            std::cerr << "Option -o requires a filename." << std::endl;
+                            return EXIT_FAILURE;
+                        }
+                    } else {
+                        inputFile = argv[i];
+                    }
+                  }
+
+                  if (!inputFile) {
+                      std::cerr << "Both -o <output_file> and <input_file> must be specified." << std::endl;
+                      return EXIT_FAILURE;
+                  }
+
+                
+                  FILE* input = fopen(inputFile, "r");
+                  if (!input) {
+                      std::cerr << "I can't open " << inputFile << "!" << std::endl;
+                      return EXIT_FAILURE;
+                  }
+                  yyin = input;
+
+                  
+
+                  
+                  try {
+                      yyparse();
+                  } catch (const std::exception& e) {
+                      std::cerr << e.what() << std::endl;
+                      fclose(input);
+                      return EXIT_FAILURE;
+                  }
+
+                  fclose(input);
+
+                  return EXIT_SUCCESS;
     }
-    return EXIT_SUCCESS;
-  
+
+
+
+    if (strcmp(argv[0], "./linker") == 0){
+                  for (int i = 1; i < argc; ++i) {
+                    if (strstr(argv[i],".bin")){
+                      Linker::inputFilesNames.push_back(argv[i]);
+                    }
+                  }
+        for (int i = 0; i < Linker::inputFilesNames.size(); i++)
+          printf("%s\n", Linker::inputFilesNames[i]);
+
+        Linker::pokreniLinker();
+    }
+
+    
 }
 
 void yyerror(const char *s) {
-  printf("EEK, parse error on line %d\n ", line_num);  
+    printf("EEK, parse error on line %d\n", line_num);
 }
