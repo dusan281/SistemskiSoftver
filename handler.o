@@ -1,0 +1,118 @@
+Nalazim se u sekciji my_handler
+
+81 e0 10 4 
+81 e0 20 4 
+90 12 0 0 
+91 20 0 2 
+31 f1 70 3c 
+30 0 0 4 
+0 0 0 0 
+91 20 0 3 
+31 f1 20 3c 
+30 0 0 4 
+0 0 0 0 
+91 20 0 4 
+31 f1 20 3c 
+30 0 0 4 
+0 0 0 0 
+93 2e 0 4 
+93 1e 0 4 
+91 ee 0 8 
+96 0 f fc 
+92 fe f f8 
+21 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+30 f0 f dc 
+21 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+30 f0 f cc 
+21 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+30 f0 f bc 
+
+
+ RELOKACIONI ZAPIS
+OFFSET              TIP                 SIMBOL              DODATAK             
+58                  ABS                 1                   0                   
+68                  ABS                 2                   0                   
+78                  ABS                 3                   0                   
+
+
+
+
+
+
+BAZEN LITERALA      
+ADRESA              VREDNOST            
+18                  handle_timer        
+28                  handle_terminal     
+38                  handle_software     
+58                  isr_timer           
+68                  isr_terminal        
+78                  isr_software        
+
+
+
+
+Nalazim se u sekciji my_data
+
+21 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+38 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+21 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+38 f0 f ec 
+93 2e 0 4 
+93 1e 0 4 
+91 ee 0 8 
+96 0 f fc 
+92 fe f f8 
+
+
+ RELOKACIONI ZAPIS
+OFFSET              TIP                 SIMBOL              DODATAK             
+8                   ABS                 2                   0                   
+14                  ABS                 8                   3c                  
+20                  ABS                 3                   0                   
+
+
+
+
+
+
+BAZEN LITERALA      
+ADRESA              VREDNOST            
+8                   isr_terminal        
+14                  finish              
+20                  isr_software        
+
+
+
+
+
+
+SIMBOL              BROJ SEKCIJE        VREDNOST            TIP                 VEZIVANJE           BROJ                VELICINA            BACKPATCH           
+                    0                   0                   NOTYP               LOC                 0                   0                   
+isr_timer           ffffffff            0                   NOTYP               GLOB                1                   0                   
+isr_terminal        ffffffff            0                   NOTYP               GLOB                2                   0                   
+isr_software        ffffffff            0                   NOTYP               GLOB                3                   0                   
+boban               d                   0                   NOTYP               GLOB                4                   0                   
+vladan              d                   18                  NOTYP               GLOB                5                   0                   
+milos               d                   28                  NOTYP               GLOB                6                   0                   
+handler             8                   0                   NOTYP               GLOB                7                   0                   
+my_handler          8                   0                   SCTN                LOC                 8                   80                  
+handle_timer        8                   50                  NOTYP               LOC                 9                   0                   8                   10                  
+
+handle_terminal     8                   60                  NOTYP               LOC                 a                   0                   8                   20                  
+
+handle_software     8                   70                  NOTYP               LOC                 b                   0                   8                   30                  
+
+finish              8                   3c                  NOTYP               LOC                 c                   0                   
+my_data             d                   0                   SCTN                LOC                 d                   3c                  

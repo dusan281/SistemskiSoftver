@@ -1,26 +1,12 @@
 #include "Asembler.hpp"
 
-
-
-struct SekcijaLinker{
-
-  Sekcija sekcijaAsembler;
-  int brojTabeleSimbola;
-
-  SekcijaLinker(Sekcija sekcijaAsembler, int brojTabeleSimbola = 0){
-    this->brojTabeleSimbola = brojTabeleSimbola;
-    this->sekcijaAsembler = sekcijaAsembler;
-  }
-};
-
-
-
 class Linker{
 
 public:
 
-  static std::vector<SekcijaLinker> sveSekcijeLinker;
-  static std::vector<std::vector<TabelaSimbolaUlaz>> tabeleSimbolaAsembler;
+  static int brojacSekcija;
+
+  static std::vector<Sekcija> sveSekcijeLinker;
   static std::vector<TabelaSimbolaUlaz> tabelaSimbolaLinker;
 
   static std::vector<char*> inputFilesNames;

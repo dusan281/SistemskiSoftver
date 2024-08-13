@@ -1,0 +1,158 @@
+Nalazim se u sekciji my_code
+
+91 e0 e fe 
+92 1f 0 4 
+30 0 0 4 
+0 0 0 0 
+94 11 0 0 
+10 0 0 0 
+91 10 0 1 
+81 e0 10 4 
+91 10 0 1 
+81 e0 10 4 
+21 f0 0 4 
+30 0 0 4 
+0 0 0 f0 
+82 f0 10 4 
+30 0 0 4 
+0 0 0 0 
+91 10 0 2 
+81 e0 10 4 
+91 10 0 1 
+81 e0 10 4 
+21 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+82 f0 10 4 
+30 0 0 4 
+0 0 0 0 
+91 10 0 7 
+81 e0 10 4 
+91 10 0 b 
+81 e0 10 4 
+21 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+82 f0 10 4 
+30 0 0 4 
+0 0 0 0 
+91 10 0 5 
+81 e0 10 4 
+91 10 0 19 
+81 e0 10 4 
+21 f0 0 4 
+30 0 0 4 
+0 0 0 0 
+82 f0 10 4 
+30 0 0 4 
+0 0 0 0 
+91 10 0 4 
+81 e0 10 4 
+91 10 0 18 
+81 e0 10 4 
+21 f0 f dc 
+82 f0 10 4 
+30 0 0 4 
+0 0 0 0 
+92 1f 0 4 
+30 0 0 4 
+0 0 0 0 
+92 11 0 0 
+92 2f f 50 
+92 22 0 0 
+92 3f f 70 
+92 33 0 0 
+92 4f f 90 
+92 44 0 0 
+92 5f f b0 
+92 55 0 0 
+92 6f f c8 
+92 66 0 0 
+92 7f 0 4 
+30 0 0 4 
+0 0 0 0 
+92 77 0 0 
+0 0 0 0 
+
+
+ RELOKACIONI ZAPIS
+OFFSET              TIP                 SIMBOL              DODATAK             
+c                   ABS                 1                   0                   
+3c                  ABS                 7                   0                   
+58                  ABS                 2                   0                   
+64                  ABS                 8                   0                   
+80                  ABS                 3                   0                   
+8c                  ABS                 f                   c                   
+a8                  ABS                 5                   0                   
+b4                  ABS                 9                   0                   
+d4                  ABS                 a                   0                   
+e0                  ABS                 f                   0                   
+118                 ABS                 b                   0                   
+
+
+
+
+
+
+BAZEN LITERALA      
+ADRESA              VREDNOST            
+c                   handler             
+30                  f0000000            
+3c                  value2              
+58                  mathAdd             
+64                  value3              
+80                  mathSub             
+8c                  value4              
+a8                  mathDiv             
+b4                  value5              
+d4                  value6              
+e0                  value1              
+118                 value7              
+
+
+
+
+Nalazim se u sekciji my_data
+
+0 0 0 0 
+0 0 0 0 
+0 0 0 0 
+0 0 0 0 
+0 0 0 0 
+0 0 0 0 
+0 0 0 0 
+
+
+ RELOKACIONI ZAPIS
+OFFSET              TIP                 SIMBOL              DODATAK             
+
+
+
+
+
+
+BAZEN LITERALA      
+ADRESA              VREDNOST            
+
+
+
+
+
+
+SIMBOL              BROJ SEKCIJE        VREDNOST            TIP                 VEZIVANJE           BROJ                VELICINA            BACKPATCH           
+                    0                   0                   NOTYP               LOC                 0                   0                   
+handler             ffffffff            0                   NOTYP               GLOB                1                   0                   
+mathAdd             ffffffff            0                   NOTYP               GLOB                2                   0                   
+mathSub             ffffffff            0                   NOTYP               GLOB                3                   0                   
+mathMul             ffffffff            0                   NOTYP               GLOB                4                   0                   
+mathDiv             ffffffff            0                   NOTYP               GLOB                5                   0                   
+my_start            c                   0                   NOTYP               GLOB                6                   0                   
+value2              f                   4                   NOTYP               GLOB                7                   0                   
+value3              f                   8                   NOTYP               GLOB                8                   0                   
+value5              f                   10                  NOTYP               GLOB                9                   0                   
+value6              f                   14                  NOTYP               GLOB                a                   0                   
+value7              f                   18                  NOTYP               GLOB                b                   0                   
+my_code             c                   0                   SCTN                LOC                 c                   124                 
+value4              f                   c                   NOTYP               LOC                 d                   0                   
+value1              f                   0                   NOTYP               LOC                 e                   0                   
+my_data             f                   0                   SCTN                LOC                 f                   1c                  

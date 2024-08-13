@@ -1,4 +1,5 @@
 .extern isr_timer, isr_terminal, isr_software
+.global boban, vladan, milos
 
 .global handler
 .section my_handler

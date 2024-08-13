@@ -1,14 +1,14 @@
 #include "Linker.hpp"
 
 
-std::vector<SekcijaLinker> Linker::sveSekcijeLinker = {};
-
-std::vector<std::vector<TabelaSimbolaUlaz>> Linker::tabeleSimbolaAsembler = {};
+std::vector<Sekcija> Linker::sveSekcijeLinker = {};
 
 std::vector<TabelaSimbolaUlaz> Linker::tabelaSimbolaLinker = {*(new TabelaSimbolaUlaz("",0,0))};
 
 std::vector<char*> Linker::inputFilesNames = {};
 std::ifstream Linker::inputFile;
+
+int Linker::brojacSekcija = 0;
 
 
 
@@ -24,9 +24,54 @@ void Linker::pokreniLinker(){
      
   }
 
+  std::cout << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl;
 
+  for (int i = 0; i < tabelaSimbolaLinker.size(); i ++){
+    std::cout << tabelaSimbolaLinker[i].simbol << " " << tabelaSimbolaLinker[i].brSekcije << " " << tabelaSimbolaLinker[i].vrednost << " " << tabelaSimbolaLinker[i].tip << " " << tabelaSimbolaLinker[i].redniBroj << std::endl;
+  }
+
+
+
+  int red = 1;
+  std::cout << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl;
+  std::cout <<sveSekcijeLinker.size() << " " << tabelaSimbolaLinker.size() << std::endl;
+
+  
+  while (red < sveSekcijeLinker.size() + 1){
+    if (tabelaSimbolaLinker[red].tip == "SCTN"){
+      red++;
+    }
+    else {
+      int staraPozicija = 0;
+
+
+
+      for (int i = red + 1 ; i < tabelaSimbolaLinker.size(); i++) {
+        if (tabelaSimbolaLinker[i].tip == "SCTN"){
+          staraPozicija = i;
+          
+          TabelaSimbolaUlaz pomoc = tabelaSimbolaLinker[i];
+          tabelaSimbolaLinker[i] = tabelaSimbolaLinker[red];
+          tabelaSimbolaLinker[red] = pomoc;
+
+          tabelaSimbolaLinker[red].brSekcije = red;
+          tabelaSimbolaLinker[red].redniBroj = red;
+          i = tabelaSimbolaLinker.size();
+        }
+      }
+
+      std::cout << staraPozicija << std::endl;
+
+
+      for (int i = 0 ; i < tabelaSimbolaLinker.size(); i++){
+        if (tabelaSimbolaLinker[i].tip == "NOTYP" && tabelaSimbolaLinker[i].brSekcije == staraPozicija) tabelaSimbolaLinker[i].brSekcije = red;
+      }
+
+      red++;
+    }
+  }
+  
  
-
   for (int i = 0; i < tabelaSimbolaLinker.size(); i ++){
     std::cout << tabelaSimbolaLinker[i].simbol << " " << tabelaSimbolaLinker[i].brSekcije << " " << tabelaSimbolaLinker[i].vrednost << " " << tabelaSimbolaLinker[i].tip << " " << tabelaSimbolaLinker[i].redniBroj << std::endl;
   }
@@ -70,9 +115,6 @@ void Linker::procitajFajl(std::ifstream& stream){
 
     
           Sekcija* novaSekcija = new Sekcija(tabelaSimbolaLinker.size(), ime_sekcije);
-
-          tabelaSimbolaLinker.push_back(*(new TabelaSimbolaUlaz(ime_sekcije,tabelaSimbolaLinker.size(),tabelaSimbolaLinker.size(),0,"SCTN","LOC",duzina_imena_sekcije)));
-
           novaSekcija->LC = duzina_sekcije;
 
           for (int i = 0 ; i < duzina_sekcije; i ++){
@@ -84,19 +126,15 @@ void Linker::procitajFajl(std::ifstream& stream){
           } 
 
           
+          sveSekcijeLinker.push_back(*novaSekcija);
 
-          SekcijaLinker* novaSekcijaLinker = new SekcijaLinker(*novaSekcija, tabeleSimbolaAsembler.size());
-
-          sveSekcijeLinker.push_back(*novaSekcijaLinker);
-
-          for (int i = 0; i < sveSekcijeLinker[sveSekcijeLinker.size() - 1].sekcijaAsembler.kod_sekcije.size(); i ++){
-            std::cout<< std::hex << static_cast<int>(sveSekcijeLinker[sveSekcijeLinker.size() - 1].sekcijaAsembler.kod_sekcije[i]) << std::endl;
+          for (int i = 0; i < sveSekcijeLinker[sveSekcijeLinker.size() - 1].kod_sekcije.size(); i ++){
+            std::cout<< std::hex << static_cast<int>(sveSekcijeLinker[sveSekcijeLinker.size() - 1].kod_sekcije[i]) << std::endl;
           }
           
 
 
           delete novaSekcija;
-          delete novaSekcijaLinker;
           
 
           int broj_relokacionih_zapisa;
@@ -126,7 +164,7 @@ void Linker::procitajFajl(std::ifstream& stream){
 
             RelokacioniZapisUlaz* noviZapis = new RelokacioniZapisUlaz(offset, "ABS", simbolRB, dodatak, simbol);
             
-            sveSekcijeLinker[sveSekcijeLinker.size() - 1].sekcijaAsembler.relokacioni_zapis.push_back(*noviZapis);
+            sveSekcijeLinker[sveSekcijeLinker.size() - 1].relokacioni_zapis.push_back(*noviZapis);
 
             delete[] ime_simbola_char;
 
@@ -192,18 +230,39 @@ void Linker::procitajFajl(std::ifstream& stream){
         tabelaSimbolaAsembler.push_back(*ulaz);
       }
 
+      for (int i = 0; i < tabelaSimbolaAsembler.size(); i++){
+        if (tabelaSimbolaAsembler[i].brSekcije != -1){
+          tabelaSimbolaAsembler[i].redniBroj = ++brojacSekcija;
+        }
+      }
+
 
       for (int i = 0; i < tabelaSimbolaAsembler.size(); i++){
 
-        if (tabelaSimbolaAsembler[i].brSekcije != -1 && tabelaSimbolaAsembler[i].tip != "SCTN"){
+        if (tabelaSimbolaAsembler[i].tip == "SCTN") {
 
-          TabelaSimbolaUlaz* noviUlaz = new TabelaSimbolaUlaz(tabelaSimbolaAsembler[i].simbol, sveSekcijeLinker.size(),tabelaSimbolaLinker.size(), tabelaSimbolaAsembler[i].vrednost, "NOTYP", "GLOB");
-          tabelaSimbolaLinker.push_back(*noviUlaz);
+          int stariBrojSekcije = tabelaSimbolaAsembler[i].brSekcije;
+          
+          tabelaSimbolaAsembler[i].brSekcije = tabelaSimbolaAsembler[i].redniBroj;
 
+
+          for (int j = 0; j < tabelaSimbolaAsembler.size(); j++){
+            if (tabelaSimbolaAsembler[j].tip == "NOTYP" && tabelaSimbolaAsembler[j].brSekcije == stariBrojSekcije) tabelaSimbolaAsembler[j].brSekcije = tabelaSimbolaAsembler[i].brSekcije;
+          }
         }
-
       }
 
-      tabeleSimbolaAsembler.push_back(tabelaSimbolaAsembler);
+      
+        
+
+
+      for (int i = 0; i < tabelaSimbolaAsembler.size(); i++){
+        if (tabelaSimbolaAsembler[i].brSekcije != -1){
+          TabelaSimbolaUlaz* ulaz = new TabelaSimbolaUlaz(tabelaSimbolaAsembler[i]);
+          tabelaSimbolaLinker.push_back(*ulaz);
+        }
+      }
+
+
       stream.close();
 }
