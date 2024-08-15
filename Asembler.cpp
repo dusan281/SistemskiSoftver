@@ -7,7 +7,7 @@ std::map<int, Sekcija*> Asembler::sveSekcije = {};
 std::vector<TabelaSimbolaUlaz> Asembler::tabelaSimbola = {*(new TabelaSimbolaUlaz("",0,0))};
 
 
-char* Asembler::outputFileName = nullptr;
+std::string Asembler::outputFileName;
 char* Asembler::outputBinaryName = nullptr;
 
 
@@ -52,8 +52,8 @@ void Asembler::ispisiKodSekcije(Sekcija* tr){
 
   outputFileBinary.write(tr->imeSekcije.c_str(), tr->imeSekcije.size()); // ime sekcije
 
-  //int redniBroj_sekcije = tr->brSekcije;
-  //outputFileBinary.write((char*)(&redniBroj_sekcije), sizeof(int)); // redni broj sekcije
+  int redniBroj_sekcije = tr->brSekcije;
+  outputFileBinary.write((char*)(&redniBroj_sekcije), sizeof(int)); // redni broj sekcije
 
   int velicina_sekcije = tr->LC;
   outputFileBinary.write((char*)(&velicina_sekcije), sizeof(int)); // velicina sekcije
@@ -353,6 +353,7 @@ void Asembler::srediLokalneSimbole(){
           if (itSimbol->vezivanje == "LOC") {
             itRelokacija->simbolRB = itSimbol->brSekcije;
             itRelokacija->dodatak = itSimbol->vrednost;
+            itRelokacija->simbol = tabelaSimbola[itSimbol->brSekcije].simbol;
           }
       
       
@@ -593,8 +594,8 @@ void Asembler::LD_REG_IND_POM(int& line_num){
 
   trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
   int gprB = argumenti[0]->vrednost;
-  int gprA = argumenti[1]->vrednost;
-  int disp = argumenti[2]->vrednost;
+  int disp = argumenti[1]->vrednost;
+  int gprA = argumenti[2]->vrednost;
 
    if (( disp > 2047) || (disp < -2048) ) {
    
@@ -789,7 +790,7 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
 
 void Asembler::ispisiIzlazneFajlove(){
-  if (!outputFileName || !outputBinaryName) {
+  if (!outputBinaryName) {
     std::cerr << "Both -o <output_file> and <input_file> must be specified." << std::endl;      
   }
 
@@ -797,7 +798,7 @@ void Asembler::ispisiIzlazneFajlove(){
     
   outputFileBinary.open(outputBinaryName, std::ios::out | std::ios::binary);
     
-  if (!outputFileName) {
+  if (!outputBinaryName) {
       std::cerr << "I can't create " << outputFileName << "!" << std::endl;
       outputFile.close();
       outputFileBinary.close();
@@ -884,6 +885,9 @@ void Asembler::ispisiIzlazneFajlove(){
 
     int redniBroj = tabelaSimbola[i].redniBroj;
     outputFileBinary.write((char*)(&redniBroj), sizeof(int));
+
+    int velicina = tabelaSimbola[i].velicina;
+    outputFileBinary.write((char*)(&velicina), sizeof(int));
 
   }
 }

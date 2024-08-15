@@ -100,12 +100,14 @@ struct Sekcija{
   int brSekcije;
   std::string imeSekcije;
   uint32_t startnaAdresa;
+  bool postavljenaAdresa;
   std::vector<std::uint8_t> kod_sekcije;
   std::vector<RelokacioniZapisUlaz> relokacioni_zapis;
   std::map<int, Argument*> promenljive_bazen; // cuvam offset od pocetka sekcije i vrednost
 
   Sekcija(int brSekcije, std::string imeSekcije){
     this->LC = 0;
+    this->postavljenaAdresa = false;
     this->startnaAdresa = 0;
     this->brSekcije = brSekcije;
     this->imeSekcije = imeSekcije;
@@ -179,7 +181,7 @@ public:
   static Adresiranje adresiranje;
 
 
-  static char* outputFileName;
+  static std::string outputFileName;
   static char* outputBinaryName;
 
 

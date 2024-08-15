@@ -239,6 +239,7 @@ void Asembler::InstrukcijaLd(int& line_num){
 
           case Adresiranje::REG_IND_POM:{
 
+            
             LD_REG_IND_POM(line_num);
             break;
           }

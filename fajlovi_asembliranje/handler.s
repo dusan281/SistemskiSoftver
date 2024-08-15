@@ -1,5 +1,4 @@
 .extern isr_timer, isr_terminal, isr_software
-.global boban, vladan, milos
 
 .global handler
 .section my_handler
@@ -8,7 +7,7 @@ handler:
     push %r2
     csrrd %cause, %r1
     ld $2, %r2
-    beq %r1, %r7, handle_timer
+    beq %r1, %r2, handle_timer
     ld $3, %r2
     beq %r1, %r2, handle_terminal
     ld $4, %r2
@@ -29,21 +28,5 @@ handle_terminal:
 handle_software:
     call isr_software
     jmp finish
-
-
-
-.section my_data
-boban:
-    call isr_terminal
-    jmp finish
-# obrada softverskog prekida
-vladan:
-    call isr_software
-    jmp finish
     
-milos:
-    pop %r2
-    pop %r1
-    iret
-
 .end

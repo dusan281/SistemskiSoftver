@@ -211,7 +211,7 @@ operand_instrukcija:
     | SYMBOL_MEM { Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0)); Asembler::postaviAdresiranje(Adresiranje::MEM_DIR);;}
     | REG_VALUE { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1)); Asembler::postaviAdresiranje(Adresiranje::REG_DIR);; }
     | LSQB REG_VALUE RSQB { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2)); Asembler::postaviAdresiranje(Adresiranje::REG_IND);; }
-    | LSQB REG_VALUE PLUS MEM_LITERAL { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2)); Asembler::postaviAdresiranje(Adresiranje::REG_IND_POM); }
+    | LSQB REG_VALUE PLUS MEM_LITERAL RSQB { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2)); Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $4));Asembler::postaviAdresiranje(Adresiranje::REG_IND_POM); }
 
 
 ENDLS:
@@ -239,8 +239,9 @@ int main(int argc, char *argv[]) {
                   for (int i = 1; i < argc; ++i) {
                     if (strcmp(argv[i], "-o") == 0) {
                         if (i + 1 < argc) {
-                            Asembler::outputFileName = argv[++i];
                             Asembler::outputBinaryName = argv[++i];
+                            std::string s = std::string(Asembler::outputBinaryName);
+                            Asembler::outputFileName = s.substr(0, s.size()-2) + ".txt";
                         } else {
                             std::cerr << "Option -o requires a filename." << std::endl;
                             return EXIT_FAILURE;
@@ -282,13 +283,23 @@ int main(int argc, char *argv[]) {
 
 
     if (strcmp(argv[0], "./linker") == 0){
+
                   for (int i = 1; i < argc; ++i) {
-                    if (strstr(argv[i],".bin")){
+                    if (strstr(argv[i],".o")){
                       Linker::inputFilesNames.push_back(argv[i]);
                     }
+
+                    if (strstr(argv[i], "-place=")){
+                      Linker::postavljanjaString.push_back(argv[i]);
+                    }
+
+                    if (strstr(argv[i], "-o")){
+                      Linker::outputFileName = argv[++i];
+                    }
+
                   }
-        for (int i = 0; i < Linker::inputFilesNames.size(); i++)
-          printf("%s\n", Linker::inputFilesNames[i]);
+
+                  
 
         Linker::pokreniLinker();
     }
