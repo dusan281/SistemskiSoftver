@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "Linker.hpp"
+#include "Emulator.hpp"
 #include <stdexcept>
 using namespace std;
 #include <sstream>
@@ -302,6 +303,12 @@ int main(int argc, char *argv[]) {
                   
 
         Linker::pokreniLinker();
+    }
+
+    if (strcmp(argv[0], "./emulator") == 0){
+      Emulator::inputFileName = argv[1];
+      Emulator::pokreniEmulator();
+
     }
 
     

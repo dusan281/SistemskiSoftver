@@ -30,7 +30,7 @@ void Asembler::InstrukcijaIret(){
 // status = mem[sp-4]
   
   trSekcija->kod_sekcije.push_back(9<<4|6);
-  trSekcija->kod_sekcije.push_back(0 << 14);
+  trSekcija->kod_sekcije.push_back(14);
   trSekcija->kod_sekcije.push_back(15);
   trSekcija->kod_sekcije.push_back(15<<4|12);
 
@@ -159,8 +159,8 @@ void Asembler::InstrukcijaPop(int gpr1){
 void Asembler::InstrukcijaPush(int gpr1){
   trSekcija->kod_sekcije.push_back(129);
   trSekcija->kod_sekcije.push_back(14<<4);
-  trSekcija->kod_sekcije.push_back(gpr1<<4);
-  trSekcija->kod_sekcije.push_back(4);
+  trSekcija->kod_sekcije.push_back(gpr1<<4 | 15);
+  trSekcija->kod_sekcije.push_back(15<<4 | 12);
   zavrsiInstrukciju();
 }
 

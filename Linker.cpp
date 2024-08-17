@@ -422,17 +422,26 @@ void Linker::ispisiRezultat(){
     for (int j = 0; j < sveSekcijeLinker[i].kod_sekcije.size(); j++){
       if (j % 4 == 0) std::cout << std::endl;
       std::cout << std::hex << static_cast<int>(sveSekcijeLinker[i].kod_sekcije[j]) << " ";
-
-      uint32_t adresa = sveSekcijeLinker[i].startnaAdresa + j;
-      uint8_t podatak = sveSekcijeLinker[i].kod_sekcije[j];
-      if (j % 4 == 0){
-        
-        outputFileHex.write((char*)(&adresa), sizeof(uint32_t) );
-      }
-
-      outputFileHex.write((char*) (&podatak), sizeof(uint8_t));
     }
   }
+
+
+  for (int i = 0; i < sveSekcijeLinker.size(); i++){
+
+    for (int j = 0; j < sveSekcijeLinker[i].kod_sekcije.size(); j = j + 8){
+      uint32_t adresa = sveSekcijeLinker[i].startnaAdresa + j;
+      outputFileHex << std::hex << adresa << ": \t";
+      for (int k = 0; k < 8; k ++)
+        if (j + k < sveSekcijeLinker[i].kod_sekcije.size() ) {
+          if (sveSekcijeLinker[i].kod_sekcije[j+k] < 16) outputFileHex << "0"; 
+          outputFileHex << static_cast<int>(sveSekcijeLinker[i].kod_sekcije[j+k]) << " ";
+
+        }
+        outputFileHex << std::endl;
+    }
+  }
+
+  outputFileHex.close();
 }
 
 

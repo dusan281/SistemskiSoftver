@@ -152,7 +152,7 @@ int Asembler::dodajUBazenLiterala(int& vrednost){
     
 
     trSekcija->kod_sekcije.push_back(3<<4); 
-    trSekcija->kod_sekcije.push_back(0);
+    trSekcija->kod_sekcije.push_back(15 << 4);
     trSekcija->kod_sekcije.push_back(0);
     trSekcija->kod_sekcije.push_back(4);
 
@@ -223,7 +223,7 @@ int Asembler::dodajUBazenLiteralaSimbol(std::string simbol){
     
 
     trSekcija->kod_sekcije.push_back(3<<4); 
-    trSekcija->kod_sekcije.push_back(0);
+    trSekcija->kod_sekcije.push_back(15 << 4);
     trSekcija->kod_sekcije.push_back(0);
     trSekcija->kod_sekcije.push_back(4);
 
@@ -733,7 +733,6 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case beq:{
       trSekcija->kod_sekcije.push_back(3<<4|9);
-      std::cout << gpr1 << " " << gpr2 << std::endl;
       resiSimbolLiteral(0,gpr1,gpr2,argumenti[0]);
       break;
     }
@@ -742,7 +741,6 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
     case bne:{
       trSekcija->kod_sekcije.push_back(3<<4|10);
       resiSimbolLiteral(0,gpr1,gpr2,argumenti[0]);
-      std::cout << gpr1 << " " << gpr2 << std::endl;
       break;
     }
 
