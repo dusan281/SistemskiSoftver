@@ -1,4 +1,4 @@
-#include "Emulator.hpp"
+#include "../inc/Emulator.hpp"
 
 char* Emulator::inputFileName;
 std::map<uint32_t,uint8_t> Emulator::mapa = {};
@@ -6,9 +6,13 @@ int Emulator::gprX[16]{0};
 int Emulator::csrX[3]{0};
 
 
+
+sem_t Emulator::sem;
+
 void Emulator::pokreniEmulator(){
 
 
+  
   incijalizujMemoriju();
 
 
@@ -21,6 +25,7 @@ void Emulator::pokreniEmulator(){
 
 
 void Emulator::incijalizujMemoriju(){
+
   std::ifstream inputFileStream(inputFileName);
 
   std::string linija;
@@ -58,6 +63,7 @@ void Emulator::pokreniIzvrsavanje(){
 
   gprX[15] = 0x40000000;
 
+
   procitajInstrukciju(gprX[15]);
 
 }
@@ -66,9 +72,13 @@ void Emulator::pokreniIzvrsavanje(){
 
 void Emulator::procitajInstrukciju(int& pc){
 
+  usleep(20);
+
+
+  sem_wait(&sem);
+
   int stariPC = pc;
   pc += 4;
-
   
   uint8_t oc = (mapa.at(stariPC) >> 4) & 0xF;
   uint8_t mod = mapa.at(stariPC) &0xF;
@@ -86,74 +96,95 @@ void Emulator::procitajInstrukciju(int& pc){
   {
     case (OP_CODE::HALT):{
       ispisiRegistre();
+      flag = true;
+      sem_post(&sem);
       break;
     }
 
     case(OP_CODE::INT):{
       
       InstrukcijaSoftverskogPrekida();
+      sem_post(&sem);
       procitajInstrukciju(gprX[15]);
+      
       break;
     }
 
     case (OP_CODE::CALL):{
 
       InstrukcijaPozivaPotprograma(mod,regA,regB,regC,disp);
+      sem_post(&sem);
       procitajInstrukciju(gprX[15]);
+      
       break;
     }
 
     case (OP_CODE::JMP):{
 
       InstrukcijaSkoka(mod,regA,regB,regC,disp);
+      sem_post(&sem);
       procitajInstrukciju(gprX[15]);
+      
       break;
     }
 
     case (OP_CODE::EXCHANGE):{
 
       InstrukcijaZamene(regB,regC);
+      sem_post(&sem);
       procitajInstrukciju(pc);
+     
       break;
     }
 
     case (OP_CODE::ARITHMETIC):{
 
       InstrukcijaAritmetika(mod,regA,regB,regC,disp);
+      sem_post(&sem);
       procitajInstrukciju(pc);
+      
       break;
     }
       
     case(OP_CODE::LOGIC):{
 
       InstrukcijaLogika(mod,regA,regB,regC,disp);
+      sem_post(&sem);
       procitajInstrukciju(pc);
+      
       break;
     }
 
     case(OP_CODE::SHIFT):{
 
       InstrukcijaShift(mod,regA,regB,regC,disp);
+      sem_post(&sem);
       procitajInstrukciju(pc);
+      
       break;
     }
 
     case (OP_CODE::STORE):{
 
       InstrukcijaStore(mod,regA,regB,regC,disp);
+      sem_post(&sem);
       procitajInstrukciju(gprX[15]);
+     
       break;
     }
       
     case (OP_CODE::LOAD):{
 
       InstrukcijaLoad(mod,regA,regB,regC,disp);
+      sem_post(&sem);
       procitajInstrukciju(pc);
       break;
     }
     
       break;
   }
+
+  
 }
 
 
@@ -191,12 +222,40 @@ void Emulator::InstrukcijaSoftverskogPrekida(){
   podatak = gprX[15];
   smestiPodatakUMemoriju(adresa,podatak);
 
-  csrX[2] = 4;
-  csrX[0] = csrX[0] & (~0x1);
+  csrX[2] = 0x4;
+  csrX[0] |= 0x4;
 
   gprX[15] = csrX[1];
 
 }
+
+
+
+
+
+void Emulator::InstrukcijaPrekidTerminal(){
+
+  gprX[14] -= 4;
+  uint32_t adresa = gprX[14];
+  int podatak = csrX[0];
+  smestiPodatakUMemoriju(adresa,podatak);
+  
+
+  gprX[14] -= 4;
+
+  adresa = gprX[14];
+  podatak = gprX[15];
+  smestiPodatakUMemoriju(adresa,podatak);
+
+  csrX[2] = 0x3;
+  csrX[0] |= 0x4;
+
+  gprX[15] = csrX[1];
+
+}
+
+
+
 
 
 void Emulator::InstrukcijaPozivaPotprograma(int mod, int regA, int regB, int regC, int disp){
@@ -227,6 +286,8 @@ void Emulator::InstrukcijaPozivaPotprograma(int mod, int regA, int regB, int reg
         break;
       }
 }
+
+
 
 
 void Emulator::InstrukcijaSkoka(int mod, int regA, int regB, int regC, int disp){
@@ -284,6 +345,9 @@ void Emulator::InstrukcijaSkoka(int mod, int regA, int regB, int regC, int disp)
 }
 
 
+
+
+
 void Emulator::InstrukcijaZamene(int regB, int regC){
 
   int temp = gprX[regB];
@@ -324,6 +388,9 @@ void Emulator::InstrukcijaAritmetika(int mod, int regA, int regB, int regC, int 
 }
 
 
+
+
+
 void Emulator::InstrukcijaLogika(int mod, int regA, int regB, int regC, int disp){
   switch (mod)
   {
@@ -357,6 +424,9 @@ void Emulator::InstrukcijaLogika(int mod, int regA, int regB, int regC, int disp
 
 
 
+
+
+
 void Emulator::InstrukcijaShift(int mod, int regA, int regB, int regC, int disp){
 
   switch (mod)
@@ -381,14 +451,21 @@ void Emulator::InstrukcijaShift(int mod, int regA, int regB, int regC, int disp)
 }
 
 
+
+
+
+
 void Emulator::InstrukcijaStore(int mod, int regA, int regB, int regC, int disp){
+
+  uint32_t adresa;
+  uint32_t podatak;
 
   switch (mod)
   {
         case (0):{
 
-          uint32_t adresa = gprX[regA] + gprX[regB] + disp;
-          int podatak = gprX[regC];
+          adresa = gprX[regA] + gprX[regB] + disp;
+          podatak = gprX[regC];
 
           smestiPodatakUMemoriju(adresa,podatak);
           break;
@@ -397,8 +474,8 @@ void Emulator::InstrukcijaStore(int mod, int regA, int regB, int regC, int disp)
         case(1):{
 
           gprX[regA] += disp;
-          uint32_t adresa = gprX[regA];
-          int podatak = gprX[regC];
+          adresa = gprX[regA];
+          podatak = gprX[regC];
 
           smestiPodatakUMemoriju(adresa,podatak);
           break;
@@ -407,8 +484,8 @@ void Emulator::InstrukcijaStore(int mod, int regA, int regB, int regC, int disp)
         
         case(2):{
           int regAA = procitajIzMemorije(regA,regB,0,disp);
-          uint32_t adresa = regAA;
-          int podatak = gprX[regC];
+          adresa = regAA;
+          podatak = gprX[regC];
           smestiPodatakUMemoriju(adresa,podatak);
           break;
         }
@@ -416,6 +493,19 @@ void Emulator::InstrukcijaStore(int mod, int regA, int regB, int regC, int disp)
         default:
           break;
   }
+
+ 
+
+  if (adresa == 0xFFFFFF00){
+    std::cout << std::hex << mapa[0xFFFFFF00] << std::flush;
+  }
+    
+    
+  
+
+  
+
+
 
 }
 
@@ -485,7 +575,10 @@ uint32_t Emulator::procitajIzMemorije(int regA, int regB, int regC, int disp){
 
   uint32_t podatak = (prviBajt << 24) | (drugiBajt << 16) | (treciBajt << 8) | cetvrtiBajt;
   return podatak;
+
 }
+
+
 
 void Emulator::smestiPodatakUMemoriju(uint32_t adresa, int podatak){
 
@@ -510,8 +603,67 @@ void Emulator::ispisiRegistre(){
     std::cout << "\tr" << std::dec << i << ":0x" << std::hex << std::setfill('0') << std::setw(8) << gprX[i];
   }
 
-  // std::cout << std::hex << gprX[0] << "\t" << gprX[1] << gprX[2] << "\t" << gprX[3] << std::endl;
-  // std::cout << gprX[4] << "\t" << gprX[5] << gprX[6] << "\t" << gprX[7] << std::endl;
-  // std::cout << gprX[8] << "\t" << gprX[9] << gprX[10] << "\t" << gprX[11] << std::endl;
-  // std::cout << gprX[12] << "\t" << gprX[13] << gprX[14] << "\t" << gprX[15] << std::endl;
-};
+  std::cout << std::endl;
+}
+
+
+
+
+void Emulator::postaviNonCanonicalMode(struct termios &oldt) {
+
+  struct termios newt;
+    tcgetattr(STDIN_FILENO, &oldt);  // Dobij trenutna svojstva terminala
+    newt = oldt;
+
+    // Isključi kanonski mod i eho
+    newt.c_lflag &= ~(ICANON | ECHO);
+
+    // Primeni nova svojstva terminala
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+}
+
+void Emulator::vratiCanonicalMode(const struct termios &oldt) {
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);  // Vrati terminal u prvobitno stanje
+}
+
+
+
+
+
+
+void Emulator::nitTerminal(){
+  
+  struct termios oldt;
+    postaviNonCanonicalMode(oldt);
+   
+    char c;
+    while (!flag){
+
+      c = getchar();  // Čitanje pritisnutog tastera  
+
+      while(csrX[0] == 4){
+        
+      }
+
+      sem_wait(&sem);
+
+      
+      mapa[0xFFFFFF04] = c;
+      mapa[0xFFFFFF05] = mapa[0xFFFFFF06] = mapa[0xFFFFFF07] = 0;
+     
+
+
+      InstrukcijaPrekidTerminal();
+      
+      sem_post(&sem);
+    }
+    
+
+    vratiCanonicalMode(oldt);  // Vrati terminal u kanonski mod
+}
+
+
+
+
+

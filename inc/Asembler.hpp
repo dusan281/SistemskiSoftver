@@ -64,6 +64,10 @@ struct Argument{
   std::string simbol;
   int vrednost;
 
+  Argument(){
+    
+  }
+
   Argument(Operand e,std::string simbol, int vrednost){
     this->e = e;
     this->simbol = simbol;
@@ -103,7 +107,7 @@ struct Sekcija{
   bool postavljenaAdresa;
   std::vector<std::uint8_t> kod_sekcije;
   std::vector<RelokacioniZapisUlaz> relokacioni_zapis;
-  std::map<int, Argument*> promenljive_bazen; // cuvam offset od pocetka sekcije i vrednost
+  std::map<int, Argument> promenljive_bazen; // cuvam offset od pocetka sekcije i vrednost
 
   Sekcija(int brSekcije, std::string imeSekcije){
     this->LC = 0;
@@ -175,7 +179,7 @@ public:
 
   static std::fstream outputFile; 
   static std::fstream outputFileBinary;
-  static std::vector<Argument*> argumenti;
+  static std::vector<Argument> argumenti;
   static std::map<int,Sekcija*> sveSekcije;
   static Sekcija* trSekcija;
   static Adresiranje adresiranje;
@@ -189,11 +193,17 @@ public:
   static std::vector<TabelaSimbolaUlaz> tabelaSimbola;
 
 
-  static void dodajUListuArgumenata(Argument* arg,int pozicija = -1);
+  static void dodajUListuArgumenata(Argument arg,int pozicija = -1);
 
   static void ispisiListuSimbola();
   static void ispisiListuSimbolaIliLiterala();
   static void ispisiKodSekcije(Sekcija* tr);
+  static void ispisiInteger(int& a, std::fstream& stream);
+  static void ispisiString(std::string& s, std::fstream& stream);
+
+  static void ispisiBinarniFajl(std::fstream& stream);
+  static void ispisiTextFajl(std::fstream& stream);
+
   static void zavrsiSekciju();
   static void ispisiGresku(int& line_num);
 
@@ -224,6 +234,7 @@ public:
   static void DirektivaEnd();
   static void DirektivaGlobal(int& line_num);
   static void DirektivaSkip(int& vrednost, int& line_num);
+  static void DirektivaAscii(std::string simbol, int& line_num);
   static void DirektivaExtern(int& line_num);
   static void DirektivaWord(int& line_num);
   static void obradiLabelu(std::string simbol, int& line_num);

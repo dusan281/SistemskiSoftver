@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "Linker.hpp"
-#include "Emulator.hpp"
+#include "inc/Linker.hpp"
+#include "inc/Emulator.hpp"
 #include <stdexcept>
 using namespace std;
 #include <sstream>
@@ -23,7 +23,7 @@ using namespace std;
     char *symbol;
 }
 
-%token GLOBAL EXTERN SECTION WORD SKIP END LSQB RSQB PLUS COMMA TWO_PUNKT COMMENT
+%token GLOBAL EXTERN SECTION WORD ASCII NAVODNICI SKIP END LSQB RSQB PLUS COMMA TWO_PUNKT COMMENT
 %token HALT INT IRET CALL RET JMP ENDL
 %token BEQ BNE BGT PUSH POP XCHG ADD SUB MUL DIV NOT AND OR XOR SHL SHR LD ST CSR_RD CSR_WR
 
@@ -73,32 +73,36 @@ directive:
     | SKIP MEM_LITERAL {
       Asembler::DirektivaSkip($2, line_num);
     }
+
+    | ASCII NAVODNICI SYMBOL_MEM NAVODNICI {
+      Asembler::DirektivaAscii($3, line_num);
+    }
     ;
 
 symbol_list:
     symbol_list COMMA SYMBOL_MEM { 
-      Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $3, 0));
+      Asembler::dodajUListuArgumenata(Argument(Operand::simbol, $3, 0));
      }
     | SYMBOL_MEM { 
-      Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0));
+      Asembler::dodajUListuArgumenata(Argument(Operand::simbol, $1, 0));
     }
     ;
 
 symbol_or_literal_list:
     symbol_or_literal_list COMMA MEM_LITERAL {
-       Argument* arg = new Argument(Operand::literal,"", $3);
+       Argument arg = Argument(Operand::literal,"", $3);
        Asembler::dodajUListuArgumenata(arg);
       }
     | symbol_or_literal_list COMMA SYMBOL_MEM { 
-       Argument* arg = new Argument(Operand::simbol,$3, 0);
+       Argument arg = Argument(Operand::simbol,$3, 0);
        Asembler::dodajUListuArgumenata(arg);
       }
     | MEM_LITERAL {
-       Argument* arg = new Argument(Operand::literal,"", $1);
+       Argument arg = Argument(Operand::literal,"", $1);
        Asembler::dodajUListuArgumenata(arg);
         }
     | SYMBOL_MEM {
-       Argument* arg = new Argument(Operand::simbol,$1, 0);
+       Argument arg = Argument(Operand::simbol,$1, 0);
        Asembler::dodajUListuArgumenata(arg);
       }
     ;
@@ -187,9 +191,9 @@ instruction:
         Asembler::napraviInstrukciju(Token_Instrukcija::shr, line_num, $2, $4);
   
       }
-    | LD operand_instrukcija COMMA REG_VALUE { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $4)); Asembler::napraviInstrukciju(Token_Instrukcija::ld, line_num); } 
+    | LD operand_instrukcija COMMA REG_VALUE { Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $4)); Asembler::napraviInstrukciju(Token_Instrukcija::ld, line_num); } 
     
-    | ST REG_VALUE COMMA operand_instrukcija { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2),0); Asembler::napraviInstrukciju(Token_Instrukcija::st, line_num); }
+    | ST REG_VALUE COMMA operand_instrukcija { Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $2),0); Asembler::napraviInstrukciju(Token_Instrukcija::st, line_num); }
 
     | CSR_RD CSR COMMA REG_VALUE { 
       Asembler::napraviInstrukciju(Token_Instrukcija::csrrd, line_num, $4, -1,-1, $2);
@@ -201,18 +205,18 @@ instruction:
     ;
 
 operand_skok:
-    MEM_LITERAL { Asembler::Asembler::postaviAdresiranje(Adresiranje::SKOK); Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1));}
-    | SYMBOL_MEM { Asembler::Asembler::postaviAdresiranje(Adresiranje::SKOK); Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0));}
+    MEM_LITERAL { Asembler::Asembler::postaviAdresiranje(Adresiranje::SKOK); Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $1));}
+    | SYMBOL_MEM { Asembler::Asembler::postaviAdresiranje(Adresiranje::SKOK); Asembler::dodajUListuArgumenata(Argument(Operand::simbol, $1, 0));}
 
 
 operand_instrukcija:
-    LITERAL { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1)); Asembler::Asembler::postaviAdresiranje(Adresiranje::IMMED); }
-    | SYMBOL  { Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0)); Asembler::postaviAdresiranje(Adresiranje::IMMED); }
-    | MEM_LITERAL { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1)); Asembler::postaviAdresiranje(Adresiranje::MEM_DIR); }
-    | SYMBOL_MEM { Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0)); Asembler::postaviAdresiranje(Adresiranje::MEM_DIR);;}
-    | REG_VALUE { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1)); Asembler::postaviAdresiranje(Adresiranje::REG_DIR);; }
-    | LSQB REG_VALUE RSQB { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2)); Asembler::postaviAdresiranje(Adresiranje::REG_IND);; }
-    | LSQB REG_VALUE PLUS MEM_LITERAL RSQB { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2)); Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $4));Asembler::postaviAdresiranje(Adresiranje::REG_IND_POM); }
+    LITERAL { Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $1)); Asembler::Asembler::postaviAdresiranje(Adresiranje::IMMED); }
+    | SYMBOL  { Asembler::dodajUListuArgumenata(Argument(Operand::simbol, $1, 0)); Asembler::postaviAdresiranje(Adresiranje::IMMED); }
+    | MEM_LITERAL { Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $1)); Asembler::postaviAdresiranje(Adresiranje::MEM_DIR); }
+    | SYMBOL_MEM { Asembler::dodajUListuArgumenata(Argument(Operand::simbol, $1, 0)); Asembler::postaviAdresiranje(Adresiranje::MEM_DIR);;}
+    | REG_VALUE { Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $1)); Asembler::postaviAdresiranje(Adresiranje::REG_DIR);; }
+    | LSQB REG_VALUE RSQB { Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $2)); Asembler::postaviAdresiranje(Adresiranje::REG_IND);; }
+    | LSQB REG_VALUE PLUS MEM_LITERAL RSQB { Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $2)); Asembler::dodajUListuArgumenata(Argument(Operand::literal, "", $4));Asembler::postaviAdresiranje(Adresiranje::REG_IND_POM); }
 
 
 ENDLS:
@@ -230,89 +234,7 @@ extern "C" {
     FILE* outputFile;  // Izlazni tok
 }
 
-int main(int argc, char *argv[]) {
-    const char* inputFile = nullptr;
-    
-    if (strcmp(argv[0], "./asembler") == 0){    // ako pokrecem asembler iz komandne linije
 
-
-
-                  for (int i = 1; i < argc; ++i) {
-                    if (strcmp(argv[i], "-o") == 0) {
-                        if (i + 1 < argc) {
-                            Asembler::outputBinaryName = argv[++i];
-                            std::string s = std::string(Asembler::outputBinaryName);
-                            Asembler::outputFileName = s.substr(0, s.size()-2) + ".txt";
-                        } else {
-                            std::cerr << "Option -o requires a filename." << std::endl;
-                            return EXIT_FAILURE;
-                        }
-                    } else {
-                        inputFile = argv[i];
-                    }
-                  }
-
-                  if (!inputFile) {
-                      std::cerr << "Both -o <output_file> and <input_file> must be specified." << std::endl;
-                      return EXIT_FAILURE;
-                  }
-
-                
-                  FILE* input = fopen(inputFile, "r");
-                  if (!input) {
-                      std::cerr << "I can't open " << inputFile << "!" << std::endl;
-                      return EXIT_FAILURE;
-                  }
-                  yyin = input;
-
-                  
-
-                  
-                  try {
-                      yyparse();
-                  } catch (const std::exception& e) {
-                      std::cerr << e.what() << std::endl;
-                      fclose(input);
-                      return EXIT_FAILURE;
-                  }
-
-                  fclose(input);
-
-                  return EXIT_SUCCESS;
-    }
-
-
-
-    if (strcmp(argv[0], "./linker") == 0){
-
-                  for (int i = 1; i < argc; ++i) {
-                    if (strstr(argv[i],".o")){
-                      Linker::inputFilesNames.push_back(argv[i]);
-                    }
-
-                    if (strstr(argv[i], "-place=")){
-                      Linker::postavljanjaString.push_back(argv[i]);
-                    }
-
-                    if (strstr(argv[i], "-o")){
-                      Linker::outputFileName = argv[++i];
-                    }
-
-                  }
-
-                  
-
-        Linker::pokreniLinker();
-    }
-
-    if (strcmp(argv[0], "./emulator") == 0){
-      Emulator::inputFileName = argv[1];
-      Emulator::pokreniEmulator();
-
-    }
-
-    
-}
 
 void yyerror(const char *s) {
     printf("EEK, parse error on line %d\n", line_num);

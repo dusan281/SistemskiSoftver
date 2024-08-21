@@ -19,7 +19,9 @@ TWO_PUNKT ":"
 \.section     { return SECTION; }
 \.word        { return WORD; }
 \.skip        { return SKIP; }
+\.ascii       { return ASCII; }
 \.end         { return END; }
+\"             { return NAVODNICI; }
 
 halt         { return HALT; }
 int          { return INT; }
