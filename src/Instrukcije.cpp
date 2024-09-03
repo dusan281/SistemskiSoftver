@@ -185,7 +185,7 @@ void Asembler::InstrukcijaCall(int& line_num){
   
   trSekcija->kod_sekcije.push_back(2<<4);
   adresiranje = Adresiranje::POZIV_POTPROGRAM;
-  resiSimbolLiteral(0,0,0,&argumenti[0]);
+  resiSimbolLiteral(0,0,0,argumenti[0]);
 
 }
 
@@ -197,8 +197,8 @@ void Asembler::InstrukcijaLd(int& line_num){
         {
           case (Adresiranje::REG_DIR):{
             
-            int gprB = argumenti[0].vrednost;
-            int gprA = argumenti[1].vrednost;
+            int gprB = argumenti[0]->vrednost;
+            int gprA = argumenti[1]->vrednost;
             LD_REG_DIR(gprA,gprB);
             break;
           }
@@ -207,8 +207,8 @@ void Asembler::InstrukcijaLd(int& line_num){
           case Adresiranje::IMMED:{
             
             adresiranje = LD_IMMED;
-            int gprA = argumenti[1].vrednost;
-            Argument* promenljiva = &argumenti[0];
+            int gprA = argumenti[1]->vrednost;
+            Argument* promenljiva = argumenti[0];
 
             resiSimbolLiteral(gprA,0,0,promenljiva);
             break;
@@ -218,8 +218,8 @@ void Asembler::InstrukcijaLd(int& line_num){
           case Adresiranje::MEM_DIR:{
 
             adresiranje = LD_IMMED;
-            int gprA = argumenti[1].vrednost;
-            Argument* promenljiva = &argumenti[0];
+            int gprA = argumenti[1]->vrednost;
+            Argument* promenljiva = argumenti[0];
             
             resiSimbolLiteral(gprA,0,0,promenljiva);
 
@@ -231,8 +231,8 @@ void Asembler::InstrukcijaLd(int& line_num){
 
           case Adresiranje::REG_IND:{
 
-            int gprB = argumenti[0].vrednost;
-            int gprA = argumenti[1].vrednost;
+            int gprB = argumenti[0]->vrednost;
+            int gprA = argumenti[1]->vrednost;
             LD_REG_IND(gprA,gprB);
             break;
           }
@@ -254,29 +254,29 @@ void Asembler::InstrukcijaLd(int& line_num){
 
 void Asembler::InstrukcijaSt(int& line_num){
 
-  int gprC = argumenti[0].vrednost;
+  int gprC = argumenti[0]->vrednost;
 
   switch (adresiranje)
         {
           case (Adresiranje::REG_DIR):{
             
 
-            int gprA = argumenti[1].vrednost;
+            int gprA = argumenti[1]->vrednost;
             LD_REG_DIR(gprA,gprC);
             break;
           }
 
           case Adresiranje::REG_IND:{
 
-            int gprA = argumenti[1].vrednost;
+            int gprA = argumenti[1]->vrednost;
             ST_REG_IND(gprA,gprC);
             break;
           }
 
           case Adresiranje::REG_IND_POM:{
 
-            int gprA = argumenti[1].vrednost;
-            int disp = argumenti[2].vrednost;
+            int gprA = argumenti[1]->vrednost;
+            int disp = argumenti[2]->vrednost;
 
             ST_REG_IND_POM(gprA,gprC,disp,line_num);
             break;
@@ -286,7 +286,7 @@ void Asembler::InstrukcijaSt(int& line_num){
           case Adresiranje::MEM_DIR:{
 
             adresiranje = STORE_MEM_DIR;
-            Argument* promenljiva = &argumenti[1];
+            Argument* promenljiva = argumenti[1];
             
             resiSimbolLiteral(0,0,gprC,promenljiva);
             break;

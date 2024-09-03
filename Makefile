@@ -33,39 +33,26 @@ $(OUTPUT_EMULATOR): $(EMULATOR_FILES)
 	g++ -pthread -I$(INCLUDE_DIR) $(EMULATOR_FILES) -lfl -o $(OUTPUT_EMULATOR)
 
 # Pravilo za pokretanje Bash skripte
-run_script: all
+run_scriptA: all
+	./startA.sh
+
+run_scriptB: all
 	./startB.sh
 
 # Pravilo za pokretanje programa sa argumentima
 run: $(OUTPUT_ASSEMBLER)
-	./$(OUTPUT_ASSEMBLER) -o handler.o fajlovi_asembliranje/handler.s
-	./$(OUTPUT_ASSEMBLER) -o main.o fajlovi_asembliranje/main.s
-	./$(OUTPUT_ASSEMBLER) -o isr_timer.o fajlovi_asembliranje/isr_timer.s
-	./$(OUTPUT_ASSEMBLER) -o isr_terminal.o fajlovi_asembliranje/isr_terminal.s
+	./$(OUTPUT_ASSEMBLER) -o handler.o tests/nivo_A/handler.s
+	./$(OUTPUT_ASSEMBLER) -o main.o tests/nivo_A/main.s
+	./$(OUTPUT_ASSEMBLER) -o isr_timer.o tests/nivo_A/isr_timer.s
+	./$(OUTPUT_ASSEMBLER) -o isr_terminal.o tests/nivo_A/isr_terminal.s
+	./$(OUTPUT_ASSEMBLER) -o isr_software.o tests/nivo_A/isr_software.s
+	./$(OUTPUT_ASSEMBLER) -o math.o tests/nivo_A/math.s
 
 link: $(OUTPUT_LINKER)
-	./$(OUTPUT_LINKER) -hex  main.o isr_terminal.o isr_timer.o handler.o -place=my_code@0x40000000 -o program.hex
+	./$(OUTPUT_LINKER) -hex  handler.o math.o main.o isr_terminal.o isr_timer.o isr_software.o -place=my_code@0x40000000 -place=math@0xF0000000 -o program.hex
 
 run_emulator: $(OUTPUT_EMULATOR)
 	./$(OUTPUT_EMULATOR) program.hex
-
-# Pravilo za pokretanje Valgrind-a sa asemblerom
-valgrind_asembler: $(OUTPUT_ASSEMBLER)
-	@echo "Running Valgrind on $(OUTPUT_ASSEMBLER)..."
-	valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT_ASSEMBLER) -o handler.o fajlovi_asembliranje/handler.s
-	valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT_ASSEMBLER) -o main.o fajlovi_asembliranje/main.s
-	valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT_ASSEMBLER) -o isr_timer.o fajlovi_asembliranje/isr_timer.s
-	valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT_ASSEMBLER) -o isr_terminal.o fajlovi_asembliranje/isr_terminal.s
-
-# Pravilo za pokretanje Valgrind-a sa linkerom
-valgrind_linker: $(OUTPUT_LINKER)
-	@echo "Running Valgrind on $(OUTPUT_LINKER)..."
-	valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT_LINKER) -hex main.o isr_terminal.o isr_timer.o handler.o -place=my_code@0x40000000 -o emulator.hex
-
-# Pravilo za pokretanje Valgrind-a sa emulatorom
-valgrind_emulator: $(OUTPUT_EMULATOR)
-	@echo "Running Valgrind on $(OUTPUT_EMULATOR)..."
-	valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT_EMULATOR) emulator.hex
 
 # Pravilo za čišćenje generisanih fajlova
 clean:

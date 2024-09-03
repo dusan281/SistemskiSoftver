@@ -4,6 +4,9 @@ class Linker{
 
 public:
 
+  static bool greske;
+  static std::ostringstream oss;
+
   static int brojacSekcija;
   static int brojacSimbola;
 
@@ -15,7 +18,7 @@ public:
 
   static std::vector<char*> postavljanjaString;
   static void postaviAdreseSekcija();
-  static bool sortirajSekcijePoAdresi(Sekcija a, Sekcija b);
+  static bool sortirajSekcijePoAdresi(Sekcija& a, Sekcija& b);
 
   static std::ifstream inputFile;
 
@@ -24,13 +27,13 @@ public:
   static void pokreniLinkerRelocatable();
 
 
-  static void proveriNedefinisanSimbol(TabelaSimbolaUlaz& simbol1);
-  static void proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i);
+  static void proveriNedefinisanSimbol(TabelaSimbolaUlaz& simbol1, std::ostringstream& oss);
+  static void proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i, std::ostringstream& oss);
 
 
   static void procitajFajl(std::ifstream& stream);
   static void procitajInteger(int& a, std::ifstream& stream);
-  static std::string procitajString(int duzina, std::ifstream& stream);
+  static std::string procitajString(int& duzina, std::ifstream& stream);
 
 
   static void spojIstoimeneSekcije();
@@ -40,11 +43,11 @@ public:
 
   static void spojSekcijeTabelaSimbola(std::vector<TabelaSimbolaUlaz>::iterator &sekcija1, std::vector<TabelaSimbolaUlaz>::iterator &sekcija2);
 
-  static bool izbrisiSekcijuLinker(Sekcija x);
-  static bool izbrisiRelokacioniZapis(RelokacioniZapisUlaz x);
-  static bool izbrisiSekcijuTabelaSimbola(TabelaSimbolaUlaz x);
+  static bool izbrisiSekcijuLinker(Sekcija& x);
+  static bool izbrisiRelokacioniZapis(RelokacioniZapisUlaz& x);
+  static bool izbrisiSekcijuTabelaSimbola(TabelaSimbolaUlaz& x);
 
-  static void proveriPreklapanjaSekcija();
+  static void proveriPreklapanjaSekcija(std::ostringstream& oss);
 
   static void ispisiRezultat();
 
@@ -54,9 +57,9 @@ public:
 
   static void izbaciPonavljanjaEksternihSimbola();
 
-  static bool izbrisiEksterneSimboleDefinisane(TabelaSimbolaUlaz ulaz);
+  static bool izbrisiEksterneSimboleDefinisane(TabelaSimbolaUlaz& ulaz);
 
-  static std::vector<Sekcija>::iterator vratiSekciju(std::string sekcija);
+  static std::vector<Sekcija>::iterator vratiSekciju(std::string& sekcija);
 
 
   static void ispisiBinarniFajl(std::fstream& stream);

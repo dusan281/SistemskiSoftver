@@ -3,6 +3,11 @@
 
 std::vector<Sekcija> Linker::sveSekcijeLinker = {};
 
+std::ostringstream Linker::oss;
+
+
+bool Linker::greske = false;
+
 std::vector<TabelaSimbolaUlaz> Linker::tabelaSimbolaLinker = {TabelaSimbolaUlaz("",0,0)};
 
 std::vector<char*> Linker::inputFilesNames = {};
@@ -21,7 +26,7 @@ void Linker::procitajInteger(int& a, std::ifstream& stream){
   stream.read((char*)(&a), sizeof(int));
 }
 
-std::string Linker::procitajString(int duzina, std::ifstream& stream){
+std::string Linker::procitajString(int& duzina, std::ifstream& stream){
 
   char* s = (char*)malloc(duzina + 1);
   stream.read(s, (duzina) * sizeof(uint8_t));
@@ -46,7 +51,7 @@ void Linker::pokreniLinkerRelocatable(){
 
   for (auto& simbol1 : tabelaSimbolaLinker){
 
-    proveriDvaPutaDefinisanSimbol(simbol1, i);
+    proveriDvaPutaDefinisanSimbol(simbol1, i, oss);
     i++;
   }
 
@@ -58,15 +63,23 @@ void Linker::pokreniLinkerRelocatable(){
 
   spojIstoimeneSekcije();
 
-  postaviAdreseSekcija();
+  //postaviAdreseSekcija();
 
 
   std::fstream outputBinaryFile;
   outputBinaryFile.open(outputFileName, std::ios::out | std::ios::binary);
 
+  if (!greske){
+
   ispisiBinarniFajl(outputBinaryFile);
 
   ispisiRezultat();
+  }
+
+  if (greske){
+    std::cout << oss.str();
+  }
+
 
 }
 
@@ -94,9 +107,9 @@ void Linker::pokreniLinkerHex(){
   int i = 0;
     for (auto& simbol1 : tabelaSimbolaLinker){
 
-      proveriNedefinisanSimbol(simbol1);
+      proveriNedefinisanSimbol(simbol1,oss);
 
-      proveriDvaPutaDefinisanSimbol(simbol1,i);
+      proveriDvaPutaDefinisanSimbol(simbol1,i,oss);
       
       i++;
     }
@@ -112,23 +125,26 @@ void Linker::pokreniLinkerHex(){
 
   std::sort(sveSekcijeLinker.begin(), sveSekcijeLinker.end(), sortirajSekcijePoAdresi);
 
-  proveriPreklapanjaSekcija();
+  proveriPreklapanjaSekcija(oss);
 
   resiRelokacije();
+
+  if (!greske) ispisiRezultat();
+
+  if (greske) std::cout << oss.str();
   
-  ispisiRezultat();
+  
 
 
 }
 
 
-void Linker::proveriPreklapanjaSekcija(){
+void Linker::proveriPreklapanjaSekcija(std::ostringstream& oss){
   for (auto it = sveSekcijeLinker.begin(); it != sveSekcijeLinker.end() - 1; ++it){
     
       if (it->startnaAdresa + it->LC > (it+1)->startnaAdresa){
-        std::ostringstream oss; 
-        oss << "Sledece sekcije se preklapaju: " << it->imeSekcije << " " << (it + 1)->imeSekcije;
-        throw std::runtime_error(oss.str());
+        greske = true;
+        oss << "Sledece sekcije se preklapaju: " << it->imeSekcije << " " << (it + 1)->imeSekcije << std::endl;
       }
   }
 }
@@ -172,7 +188,7 @@ void Linker::resiRelokacije(){
 
 
 
-bool Linker::sortirajSekcijePoAdresi(Sekcija a, Sekcija b){
+bool Linker::sortirajSekcijePoAdresi(Sekcija& a, Sekcija& b){
   return a.startnaAdresa < b.startnaAdresa;
 }
 
@@ -266,17 +282,17 @@ void Linker::prepisiRelokacioneZapise(std::vector<Sekcija>::iterator &sekcija1, 
 
 
 
-bool Linker::izbrisiSekcijuLinker(Sekcija x){
+bool Linker::izbrisiSekcijuLinker(Sekcija& x){
   return x.brSekcije == 0;
 }
 
 
-bool Linker::izbrisiSekcijuTabelaSimbola(TabelaSimbolaUlaz x){
+bool Linker::izbrisiSekcijuTabelaSimbola(TabelaSimbolaUlaz& x){
   return x.brSekcije == -10;
 }
 
 
-bool Linker::izbrisiRelokacioniZapis(RelokacioniZapisUlaz x){
+bool Linker::izbrisiRelokacioniZapis(RelokacioniZapisUlaz& x){
 
   return x.tip == "RESEN";
 }
@@ -426,37 +442,88 @@ void Linker::ispisiRezultat(){
   std::fstream outputLinkerFile;
   outputLinkerFile.open("linker.txt",std::ios::out | std::ios::app);
 
-  for (auto& simbol : tabelaSimbolaLinker){
-    outputLinkerFile << std::hex << simbol.simbol << " " << simbol.brSekcije << " " << simbol.vrednost << " " << simbol.tip << " " << simbol.redniBroj << " " << simbol.velicina << std::endl;
-  }
+  for (auto sekcija : sveSekcijeLinker){
 
+    outputLinkerFile << "-------Masinski kod sekcije " << sekcija.imeSekcije << "-------" << std::endl ;
 
-  outputLinkerFile << "SADA SEKCIJE" << std::endl;
+    for (int i = 0 ; i < sekcija.kod_sekcije.size(); i++){
+    
+      if (i % 8 == 0) outputLinkerFile<< std:: hex << i << ": ";
+      outputLinkerFile << std::hex << static_cast<int>(sekcija.kod_sekcije[i]) << " ";
+      if (i % 8 == 7) outputLinkerFile << std::endl;
+    
+    } 
 
-  for (auto& sekcija : sveSekcijeLinker){
 
     outputLinkerFile << std::endl;
+    outputLinkerFile << std::endl;
 
-    outputLinkerFile << "SEKCIJA " << sekcija.imeSekcije << " " << sekcija.brSekcije << " " << sekcija.startnaAdresa << std::endl;
+    outputLinkerFile << "-------Relokacioni zapis-------"<<std::endl;
 
-    for (auto& relokZapis : sekcija.relokacioni_zapis){
-      outputLinkerFile << relokZapis.simbol << " " << relokZapis.offset <<  " " << relokZapis.dodatak << relokZapis.tip << std::endl;;
+    int nameWidth = 20;
+    const char separator = ' ';
+
+    outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "OFFSET"
+          << std::left << std::setw(nameWidth) << std::setfill(separator) << "TIP"
+          << std::left << std::setw(nameWidth) << std::setfill(separator) << "SIMBOL"
+          << std::left << std::setw(nameWidth) << std::setfill(separator) << "DODATAK"
+          <<std::endl;
+    
+
+
+
+    for (int i = 0; i < sekcija.relokacioni_zapis.size(); i++){
+      outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << sekcija.relokacioni_zapis[i].offset
+          << std::left << std::setw(nameWidth) << std::setfill(separator) << sekcija.relokacioni_zapis[i].tip
+          << std::left << std::setw(nameWidth) << std::setfill(separator) << sekcija.relokacioni_zapis[i].simbol
+          << std::left << std::setw(nameWidth) << std::setfill(separator) << sekcija.relokacioni_zapis[i].dodatak;
+
+      
+
+  
+      outputLinkerFile<<std::endl;
     }
+
+    outputLinkerFile << std::endl;
+    outputLinkerFile << std::endl;
+
   }
+
+  outputLinkerFile << std::endl << std:: endl << std::endl << std:: endl;
+
+  outputLinkerFile << std::endl << std:: endl;
+
+  int nameWidth = 20;
+  const char separator = ' ';
+
+  outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "SIMBOL";
+  outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "BROJ SEKCIJE";
+  outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "VREDNOST";
+  outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "TIP";
+  outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "VEZIVANJE";
+  outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "BROJ";
+  outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "VELICINA";
+  outputLinkerFile<<std::endl;
+  
+
+  for (const auto& ulaz : tabelaSimbolaLinker) {
+
+        outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.simbol;
+        outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.brSekcije;
+        outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.vrednost;
+        outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.tip;
+        outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.vezivanje;
+        outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.redniBroj;
+        outputLinkerFile << std::left << std::setw(nameWidth) << std::setfill(separator) << ulaz.velicina;
+
+      outputLinkerFile << std::endl;
+
+      
+      
+  }  
 
   std::fstream outputFileHex;
   outputFileHex.open(outputFileName ,std::ios::out | std::ios::binary);
-
-  for (auto& sekcija : sveSekcijeLinker){
-    outputLinkerFile << std::endl << std::endl << std::endl << sekcija.imeSekcije << std::endl;
-
-    for (int j = 0; j < sekcija.kod_sekcije.size(); j++){
-
-      if (j % 4 == 0) outputLinkerFile << std::endl;
-      outputLinkerFile << std::hex << static_cast<int>(sekcija.kod_sekcije[j]) << " ";
-    }
-  }
-
 
   for (auto& sekcija : sveSekcijeLinker){
 
@@ -476,6 +543,7 @@ void Linker::ispisiRezultat(){
         outputFileHex << std::endl;
     }
   }
+
 
   outputFileHex.close();
   outputLinkerFile.close();
@@ -576,7 +644,7 @@ void Linker::srediVrednostSimbola(){
 }
 
 
-void Linker::proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i){
+void Linker::proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i, std::ostringstream& oss){
 
   
 
@@ -589,15 +657,13 @@ void Linker::proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i){
 
           if (tabelaSimbolaLinker[j].simbol == simbol1.simbol && tabelaSimbolaLinker[j].brSekcije != -1 && i != j && simbol1.simbol != ""){
             flag = true;
-            std:: cout << tabelaSimbolaLinker[i].simbol << " " << simbol1.simbol << std::endl;
             break; // naisao na 2 puta definisani simbol
           } 
         }
 
         if (flag == true){
-            std::ostringstream oss; 
+          greske = true;
             oss << "Simbol definisan u dve razlicite sekcije: " << tabelaSimbolaLinker[i].simbol << std::endl;
-            throw std::runtime_error(oss.str());
         }
 
       }
@@ -605,7 +671,7 @@ void Linker::proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i){
 
 
 
-void Linker::proveriNedefinisanSimbol(TabelaSimbolaUlaz& simbol1){
+void Linker::proveriNedefinisanSimbol(TabelaSimbolaUlaz& simbol1, std::ostringstream& oss){
 
   if (simbol1.brSekcije == -1){
         bool flag = false; // ako naidjem na nedefinisani simbol
@@ -618,9 +684,8 @@ void Linker::proveriNedefinisanSimbol(TabelaSimbolaUlaz& simbol1){
         }
 
         if (flag == false){
-            std::ostringstream oss; 
-            oss << "Koriscen lokalni nedefnisani simbol: " << simbol1.simbol;
-            throw std::runtime_error(oss.str());
+          greske = true;
+            oss << "Koriscen lokalni nedefnisani simbol: " << simbol1.simbol << std::endl;
         }
 
       }
@@ -628,7 +693,7 @@ void Linker::proveriNedefinisanSimbol(TabelaSimbolaUlaz& simbol1){
 
 
 
-bool Linker::izbrisiEksterneSimboleDefinisane(TabelaSimbolaUlaz ulaz){
+bool Linker::izbrisiEksterneSimboleDefinisane(TabelaSimbolaUlaz& ulaz){
   
   for (auto simbol : tabelaSimbolaLinker){
 

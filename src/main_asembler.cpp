@@ -10,6 +10,8 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
+    try
+    {
   const char* inputFile = nullptr;
 
 	for (int i = 1; i < argc; ++i) {
@@ -54,4 +56,9 @@ int main(int argc, char* argv[])
     fclose(input);
 
     return EXIT_SUCCESS;
+
+    
+    } catch(std::exception& e){
+        std::cout << e.what() << std::endl;
+    }
 }

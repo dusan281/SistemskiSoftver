@@ -1,7 +1,7 @@
 #include "../inc/Asembler.hpp"
 
 
-std::vector<Argument> Asembler::argumenti = {};
+std::vector<Argument*> Asembler::argumenti = {};
 Sekcija* Asembler::trSekcija = nullptr;
 std::map<int, Sekcija*> Asembler::sveSekcije = {};
 std::vector<TabelaSimbolaUlaz> Asembler::tabelaSimbola = { TabelaSimbolaUlaz("",0,0)};
@@ -21,7 +21,7 @@ void Asembler::postaviAdresiranje(enum Adresiranje a){
   Asembler::adresiranje = a;
 }
 
-void Asembler::dodajUListuArgumenata(Argument arg, int pozicija){
+void Asembler::dodajUListuArgumenata(Argument* arg, int pozicija){
   if (pozicija != -1){
     argumenti.insert(argumenti.begin(), arg);
     return;
@@ -73,12 +73,12 @@ int Asembler::dodajUBazenLiterala(int& vrednost){
   bool flag = false;
 
   for (auto it = trSekcija->promenljive_bazen.begin(); it != trSekcija->promenljive_bazen.end(); it++){
-    if (it->second.vrednost == vrednost) return it->first;
+    if (it->second->vrednost == vrednost) return it->first;
   }
 
   if (!flag){ //literal ne postoji u bazenu
 
-    std::pair<int, Argument> novi_par;
+    std::pair<int, Argument*> novi_par;
 
     
 
@@ -90,7 +90,7 @@ int Asembler::dodajUBazenLiterala(int& vrednost){
     trSekcija->LC += 4;
 
     novi_par.first = trSekcija->LC ;
-    novi_par.second = Argument(Operand::literal, "", vrednost);
+    novi_par.second = new Argument(Operand::literal, "", vrednost);
 
     trSekcija->promenljive_bazen.insert(novi_par);
 
@@ -140,17 +140,17 @@ void Asembler::literalMali(int gprA, int gprB, int gprC, int argument){
 
 }
 
-int Asembler::dodajUBazenLiteralaSimbol(std::string simbol){
+int Asembler::dodajUBazenLiteralaSimbol(std::string& simbol){
 
   bool flag = false;
 
   for (auto it = trSekcija->promenljive_bazen.begin(); it != trSekcija->promenljive_bazen.end(); it++){
-    if (it->second.simbol == simbol) return it->first;
+    if (it->second->simbol == simbol) return it->first;
   }
 
   if (!flag){ //literal/simbol ne postoji u bazenu
 
-    std::pair<int, Argument> novi_par;
+    std::pair<int, Argument*> novi_par;
 
     
 
@@ -162,7 +162,7 @@ int Asembler::dodajUBazenLiteralaSimbol(std::string simbol){
     trSekcija->LC += 4;
 
     novi_par.first = trSekcija->LC ;
-    novi_par.second = Argument(Operand::simbol, simbol, 0);
+    novi_par.second = new Argument(Operand::simbol, simbol, 0);
 
     trSekcija->promenljive_bazen.insert(novi_par);
 
@@ -178,7 +178,7 @@ int Asembler::dodajUBazenLiteralaSimbol(std::string simbol){
 
 }
 
-std::vector<TabelaSimbolaUlaz>::iterator Asembler::dodajSimbolUTabeluSimbola(std::string simbol){
+std::vector<TabelaSimbolaUlaz>::iterator Asembler::dodajSimbolUTabeluSimbola(std::string& simbol){
 
   auto it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
     
@@ -192,7 +192,7 @@ std::vector<TabelaSimbolaUlaz>::iterator Asembler::dodajSimbolUTabeluSimbola(std
 
 }
 
-int Asembler::simbolNedefinisan(std::string simbol,int gprA, int gprB, int gprC){
+int Asembler::simbolNedefinisan(std::string& simbol,int gprA, int gprB, int gprC){
   int prviPrepravka = trSekcija->LC + 2;
         
   trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
@@ -215,7 +215,7 @@ int Asembler::simbolNedefinisan(std::string simbol,int gprA, int gprB, int gprC)
   return (pomeraj +=slInstrukcija);
 }
 
-void Asembler::simbolDefinisan(int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator it){
+void Asembler::simbolDefinisan(int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator& it){
 
 
     int disp = it->vrednost - trSekcija->LC - 4;  //-4 jer pc pokazuje na sledecu instrukciju
@@ -241,14 +241,15 @@ void Asembler::srediLokalneSimbole(){
 
       for (auto back = simbol->backpatch.begin(); back != simbol->backpatch.end(); back++){
         
+        BackpatchUlaz* backUlaz = *back;
 
-        if (back->sekcija == trSekcija->brSekcije){
-          int disp = simbol->vrednost - back->offset - 4; //-4 jer pokazuje pc na sledecu instrukciju
+        if (backUlaz->sekcija == trSekcija->brSekcije){
+          int disp = simbol->vrednost - backUlaz->offset - 4; //-4 jer pokazuje pc na sledecu instrukciju
           
-          if (back->instrukcija == "JMP") trSekcija->kod_sekcije[back->offset] ^= 0b1000; 
-          if (back->instrukcija == "CALL") trSekcija->kod_sekcije[back->offset] ^= 0b0001;
-          trSekcija->kod_sekcije[back->offset + 2] |= ((disp >> 8) & 0xF);
-          trSekcija->kod_sekcije[back->offset + 3] = disp & 0xFF;
+          if (backUlaz->instrukcija == "JMP") trSekcija->kod_sekcije[backUlaz->offset] ^= 0b1000; 
+          if (backUlaz->instrukcija == "CALL") trSekcija->kod_sekcije[backUlaz->offset] ^= 0b0001;
+          trSekcija->kod_sekcije[backUlaz->offset + 2] |= ((disp >> 8) & 0xF);
+          trSekcija->kod_sekcije[backUlaz->offset + 3] = disp & 0xFF;
 
         }
       }
@@ -302,16 +303,16 @@ void Asembler::srediLokalneSimbole(){
 
 
 
-bool Asembler::izbrisiRelokacioniZapis(RelokacioniZapisUlaz zapis){
+bool Asembler::izbrisiRelokacioniZapis(RelokacioniZapisUlaz& zapis){
   return zapis.tip == "SYMBOL_MEM";
 }
 
-bool Asembler::izbrisiSimbolIzTabeleSimbola(TabelaSimbolaUlaz ulaz){
+bool Asembler::izbrisiSimbolIzTabeleSimbola(TabelaSimbolaUlaz& ulaz){
   return ulaz.vezivanje == "LOC" && ulaz.tip == "NOTYP";
 }
 
 
-void Asembler::relokacijaInstrukcije(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator it){
+void Asembler::relokacijaInstrukcije(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator& it){
 
   auto iter = std::find(trSekcija->relokacioni_zapis.begin(),trSekcija->relokacioni_zapis.end(), pomeraj);
 
@@ -321,7 +322,7 @@ void Asembler::relokacijaInstrukcije(int pomeraj, std::vector<TabelaSimbolaUlaz>
   if (iter != trSekcija->relokacioni_zapis.end() && iter->tip == "SYMBOL_MEM") iter->tip = "ABS";
 }
 
-void Asembler::relokacijaSkok(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator it, int instrukcija){
+void Asembler::relokacijaSkok(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator& it, int instrukcija){
 
   auto iter = std::find(trSekcija->relokacioni_zapis.begin(),trSekcija->relokacioni_zapis.end(), pomeraj);
   
@@ -330,8 +331,8 @@ void Asembler::relokacijaSkok(int pomeraj, std::vector<TabelaSimbolaUlaz>::itera
 
     
 
-    if (adresiranje == Adresiranje::SKOK) it->backpatch.push_back(BackpatchUlaz(trSekcija->brSekcije, instrukcija, "JMP"));
-    if (adresiranje == Adresiranje::POZIV_POTPROGRAM) it->backpatch.push_back(BackpatchUlaz(trSekcija->brSekcije, instrukcija, "CALL"));
+    if (adresiranje == Adresiranje::SKOK) it->backpatch.push_back(new BackpatchUlaz(trSekcija->brSekcije, instrukcija, "JMP"));
+    if (adresiranje == Adresiranje::POZIV_POTPROGRAM) it->backpatch.push_back(new BackpatchUlaz(trSekcija->brSekcije, instrukcija, "CALL"));
 
     if (iter == trSekcija->relokacioni_zapis.end()) trSekcija->relokacioni_zapis.push_back(RelokacioniZapisUlaz(pomeraj, "SYMBOL_MEM", it != tabelaSimbola.end() ? it->redniBroj : tabelaSimbola.size(), 0, it->simbol));
   }
@@ -525,9 +526,9 @@ void Asembler::LD_REG_IND_POM(int& line_num){
 
 
   trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
-  int gprB = argumenti[0].vrednost;
-  int disp = argumenti[1].vrednost;
-  int gprA = argumenti[2].vrednost;
+  int gprB = argumenti[0]->vrednost;
+  int disp = argumenti[1]->vrednost;
+  int gprA = argumenti[2]->vrednost;
 
    if (( disp > 2047) || (disp < -2048) ) {
    
@@ -544,8 +545,8 @@ void Asembler::LD_REG_IND_POM(int& line_num){
 void Asembler::LD_MEM_DIR(){
 
   adresiranje = LD_IMMED;
-  int gprA = argumenti[1].vrednost;
-  Argument* promenljiva = &argumenti[0];
+  int gprA = argumenti[1]->vrednost;
+  Argument* promenljiva = argumenti[0];
   
   resiSimbolLiteral(gprA,0,0,promenljiva);
 
@@ -595,7 +596,7 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case jmp:{
       trSekcija->kod_sekcije.push_back(3<<4|8);
-      resiSimbolLiteral(0,0,0,&argumenti[0]);
+      resiSimbolLiteral(0,0,0,argumenti[0]);
       break;
     }
     
@@ -661,25 +662,26 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
 
     case xchg:{
       InstrukcijaXchg(gpr1, gpr2);
+      break;
     }
 
     case beq:{
       trSekcija->kod_sekcije.push_back(3<<4|9);
-      resiSimbolLiteral(0,gpr1,gpr2,&argumenti[0]);
+      resiSimbolLiteral(0,gpr1,gpr2,argumenti[0]);
       break;
     }
 
 
     case bne:{
       trSekcija->kod_sekcije.push_back(3<<4|10);
-      resiSimbolLiteral(0,gpr1,gpr2,&argumenti[0]);
+      resiSimbolLiteral(0,gpr1,gpr2,argumenti[0]);
       break;
     }
 
 
     case bgt:{
       trSekcija->kod_sekcije.push_back(3<<4|11);
-      resiSimbolLiteral(0,gpr1,gpr2,&argumenti[0]);;
+      resiSimbolLiteral(0,gpr1,gpr2,argumenti[0]);;
       break;
     }
 
@@ -711,6 +713,8 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
     default:
       break;
   }
+
+  for (Argument* arg : argumenti) delete arg; // shrink_to_fit() ne oslobadja memoriju sa heapa pa mora rucno
 
   argumenti.clear();
   argumenti.shrink_to_fit();
@@ -788,19 +792,21 @@ void Asembler::ispisiTextFajl(std::fstream& stream){
 
   for (auto sekcija : sveSekcije){
 
-    outputFile << "Nalazim se u sekciji " << sekcija.second->imeSekcije << std::endl ;
+    outputFile << "-------Masinski kod sekcije " << sekcija.second->imeSekcije << "-------" << std::endl ;
 
     for (int i = 0 ; i < sekcija.second->kod_sekcije.size(); i++){
     
-      if (i % 4 == 0) outputFile<<std::endl;
+      if (i % 8 == 0) outputFile<< std:: hex << i << ": ";
       outputFile << std::hex << static_cast<int>(sekcija.second->kod_sekcije[i]) << " ";
+      if (i % 8 == 7) outputFile << std::endl;
     
     } 
 
 
-    outputFile << std::endl << std::endl << std::endl;
+    outputFile << std::endl;
+    outputFile << std::endl;
 
-    outputFile << " RELOKACIONI ZAPIS"<<std::endl;
+    outputFile << "-------Relokacioni zapis-------"<<std::endl;
 
     int nameWidth = 20;
     const char separator = ' ';
@@ -826,9 +832,10 @@ void Asembler::ispisiTextFajl(std::fstream& stream){
       outputFile<<std::endl;
     }
 
-    outputFile << std::endl << std::endl << std::endl << std::endl << std::endl << std::endl;
+    outputFile << std::endl;
+    outputFile << std::endl;
 
-    outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "BAZEN LITERALA"
+    outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << "-------Bazen literala-------"
               << std::endl
               << std::left << std::setw(nameWidth) << std::setfill(separator) << "ADRESA"
               << std::left << std::setw(nameWidth) << std::setfill(separator) << "VREDNOST" << std::endl;; 
@@ -837,11 +844,20 @@ void Asembler::ispisiTextFajl(std::fstream& stream){
     for (auto it = sekcija.second->promenljive_bazen.begin(); it != sekcija.second->promenljive_bazen.end(); it++){
 
       outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->first;
-      if (it->second.e == Operand::literal) outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->second.vrednost;
-      if (it->second.e == Operand::simbol) outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->second.simbol;
+      if (it->second->e == Operand::literal) outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->second->vrednost;
+      if (it->second->e == Operand::simbol) outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->second->simbol;
       
       outputFile << std::endl;
     }
+    outputFile << std::endl;
+    outputFile << std::endl;
+    outputFile << std::endl;
+    outputFile << "--------------------------------------------------------";
+    outputFile << std::endl;
+    outputFile << std::endl;
+    outputFile << std::endl;
+    outputFile << std::endl;
+
   }
 
   outputFile << std::endl << std:: endl << std::endl << std:: endl;
@@ -874,8 +890,8 @@ void Asembler::ispisiTextFajl(std::fstream& stream){
 
         for (const auto& it : ulaz.backpatch){
 
-          outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it.sekcija;
-          outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it.offset;
+          outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->sekcija;
+          outputFile << std::left << std::setw(nameWidth) << std::setfill(separator) << it->offset;
           outputFile << std::endl;
         
 

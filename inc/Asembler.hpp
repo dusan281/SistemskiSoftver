@@ -64,9 +64,6 @@ struct Argument{
   std::string simbol;
   int vrednost;
 
-  Argument(){
-    
-  }
 
   Argument(Operand e,std::string simbol, int vrednost){
     this->e = e;
@@ -78,7 +75,7 @@ struct Argument{
     return vrednost == uporedi.vrednost || simbol == uporedi.simbol;
   }
 
-  bool operator==(std::string uporedi){
+  bool operator==(std::string& uporedi){
     return simbol == uporedi;
   }
 };
@@ -90,7 +87,7 @@ struct RelokacioniZapisUlaz{
   int dodatak;
   std::string simbol;
 
-  RelokacioniZapisUlaz(int offset, std::string tip, int simbolRB, int dodatak, std::string simbol) : offset{offset}, tip{tip}, simbolRB{simbolRB}, dodatak{dodatak}, simbol{simbol} {}
+  RelokacioniZapisUlaz(int offset, const std::string& tip, int simbolRB, int dodatak, const std::string& simbol) : offset{offset}, tip{tip}, simbolRB{simbolRB}, dodatak{dodatak}, simbol{simbol} {}
 
 
   bool operator==(const int& uporedi) const { // nalazim sekciju iz tabele simbola
@@ -107,9 +104,9 @@ struct Sekcija{
   bool postavljenaAdresa;
   std::vector<std::uint8_t> kod_sekcije;
   std::vector<RelokacioniZapisUlaz> relokacioni_zapis;
-  std::map<int, Argument> promenljive_bazen; // cuvam offset od pocetka sekcije i vrednost
+  std::map<int, Argument*> promenljive_bazen; // cuvam offset od pocetka sekcije i vrednost
 
-  Sekcija(int brSekcije, std::string imeSekcije){
+  Sekcija(int brSekcije, const std::string& imeSekcije){
     this->LC = 0;
     this->postavljenaAdresa = false;
     this->startnaAdresa = 0;
@@ -136,7 +133,7 @@ struct BackpatchUlaz{
   int offset;
   std::string instrukcija;
 
-  BackpatchUlaz(int sekcija, int offset, std::string instrukcija){
+  BackpatchUlaz(int sekcija, int offset, const std::string& instrukcija){
     this->instrukcija = instrukcija;
     this->offset = offset;
     this->sekcija = sekcija;
@@ -151,9 +148,9 @@ struct TabelaSimbolaUlaz{
   std::string vezivanje;
   int redniBroj;
   int velicina;
-  std::vector<BackpatchUlaz> backpatch;
+  std::vector<BackpatchUlaz*> backpatch;
 
-  TabelaSimbolaUlaz(std::string simbol, int brSekcije, int redniBroj, int vrednost = 0, std::string tip = "NOTYP", std::string vezivanje = "LOC", int velicina = 0){
+  TabelaSimbolaUlaz(const std::string& simbol, int brSekcije, int redniBroj, int vrednost = 0, std::string tip = "NOTYP", std::string vezivanje = "LOC", int velicina = 0){
     this->simbol = simbol;
     this->brSekcije = brSekcije;
     this->vrednost = vrednost;
@@ -179,7 +176,7 @@ public:
 
   static std::fstream outputFile; 
   static std::fstream outputFileBinary;
-  static std::vector<Argument> argumenti;
+  static std::vector<Argument*> argumenti;
   static std::map<int,Sekcija*> sveSekcije;
   static Sekcija* trSekcija;
   static Adresiranje adresiranje;
@@ -193,7 +190,7 @@ public:
   static std::vector<TabelaSimbolaUlaz> tabelaSimbola;
 
 
-  static void dodajUListuArgumenata(Argument arg,int pozicija = -1);
+  static void dodajUListuArgumenata(Argument* arg,int pozicija = -1);
 
   static void ispisiListuSimbola();
   static void ispisiListuSimbolaIliLiterala();
@@ -212,15 +209,15 @@ public:
   static void literalMali(int gprA, int gprB, int gprC, int argument);
 
 
-  static std::vector<TabelaSimbolaUlaz>::iterator dodajSimbolUTabeluSimbola(std::string);
+  static std::vector<TabelaSimbolaUlaz>::iterator dodajSimbolUTabeluSimbola(std::string&);
 
   static int dodajUBazenLiterala(int& vrednost);
-  static int dodajUBazenLiteralaSimbol(std::string simbol);
-  static int simbolNedefinisan(std::string simbol, int gprA, int gprB, int gprC);
-  static void simbolDefinisan(int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator it);
+  static int dodajUBazenLiteralaSimbol(std::string& simbol);
+  static int simbolNedefinisan(std::string& simbol, int gprA, int gprB, int gprC);
+  static void simbolDefinisan(int gprA, int gprB, int gprC, std::vector<TabelaSimbolaUlaz>::iterator& it);
   
-  static bool izbrisiRelokacioniZapis(RelokacioniZapisUlaz zapis);
-  static bool izbrisiSimbolIzTabeleSimbola(TabelaSimbolaUlaz ulaz);
+  static bool izbrisiRelokacioniZapis(RelokacioniZapisUlaz& zapis);
+  static bool izbrisiSimbolIzTabeleSimbola(TabelaSimbolaUlaz& ulaz);
 
   static void srediLokalneSimbole();
 
@@ -230,14 +227,14 @@ public:
   static void postaviAdresiranje(enum Adresiranje a);
 
 
-  static void DirektivaSection(std::string simbol, int& line_num);
+  static void DirektivaSection(const std::string& simbol, int& line_num);
   static void DirektivaEnd();
   static void DirektivaGlobal(int& line_num);
   static void DirektivaSkip(int& vrednost, int& line_num);
-  static void DirektivaAscii(std::string simbol, int& line_num);
+  static void DirektivaAscii(const std::string& simbol, int& line_num);
   static void DirektivaExtern(int& line_num);
   static void DirektivaWord(int& line_num);
-  static void obradiLabelu(std::string simbol, int& line_num);
+  static void obradiLabelu(const std::string& simbol, int& line_num);
 
 
   static void LD_REG_DIR(int gprA, int gprB);
@@ -294,9 +291,9 @@ public:
 
   static void napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1 = -1, int gpr2 = -1, int gpr3 = -1, int csr = -1);
 
-  static void relokacijaInstrukcije(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator it);
+  static void relokacijaInstrukcije(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator& it);
 
-  static void relokacijaSkok(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator it, int instrukcija);
+  static void relokacijaSkok(int pomeraj, std::vector<TabelaSimbolaUlaz>::iterator& it, int instrukcija);
 
   static void ispisiIzlazneFajlove();
 

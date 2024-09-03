@@ -61,129 +61,120 @@ void Emulator::incijalizujMemoriju(){
 
 void Emulator::pokreniIzvrsavanje(){
 
-  gprX[15] = 0x40000000;
+  gprX[PC] = 0x40000000;
 
 
-  procitajInstrukciju(gprX[15]);
+  procitajInstrukcije(gprX[PC]);
 
 }
 
 
 
-void Emulator::procitajInstrukciju(int& pc){
-
-  usleep(20);
+void Emulator::procitajInstrukcije(int& pc){
 
 
-  sem_wait(&sem);
-
-  int stariPC = pc;
-  pc += 4;
   
-  uint8_t oc = (mapa.at(stariPC) >> 4) & 0xF;
-  uint8_t mod = mapa.at(stariPC) &0xF;
-  uint8_t regA = (mapa.at(stariPC + 1) >> 4) & 0xF;
-  uint8_t regB = mapa.at(stariPC + 1) &0xF;
-  uint8_t regC = (mapa.at(stariPC + 2) >> 4) & 0xF;
-  int disp = ((mapa.at(stariPC + 2) &0xF) << 8) | mapa.at(stariPC + 3);
 
-  if (disp & 0x800){
-    disp = disp | 0xFFFFF000;
+  uint8_t oc = OP_CODE::START;
+
+  while (oc != OP_CODE::HALT){
+
+    sem_wait(&sem);
+  
+    int stariPC = gprX[PC];
+    gprX[PC] += 4;
+
+
+      oc = (mapa.at(stariPC) >> 4) & 0xF;
+      uint8_t mod = mapa.at(stariPC) &0xF;
+      uint8_t regA = (mapa.at(stariPC + 1) >> 4) & 0xF;
+      uint8_t regB = mapa.at(stariPC + 1) &0xF;
+      uint8_t regC = (mapa.at(stariPC + 2) >> 4) & 0xF;
+      int disp = ((mapa.at(stariPC + 2) &0xF) << 8) | mapa.at(stariPC + 3);
+
+      if (disp & 0x800){
+        disp = disp | 0xFFFFF000;
+      }
+
+
+      switch (oc)
+      {
+        case (OP_CODE::HALT):{
+          ispisiRegistre();
+          flag = true;
+          sem_post(&sem);
+          break;
+        }
+
+        case(OP_CODE::INT):{
+          
+          InstrukcijaSoftverskogPrekida();
+          sem_post(&sem);         
+          break;
+        }
+
+        case (OP_CODE::CALL):{
+
+          InstrukcijaPozivaPotprograma(mod,regA,regB,regC,disp);
+          sem_post(&sem);          
+          break;
+        }
+
+        case (OP_CODE::JMP):{
+
+          InstrukcijaSkoka(mod,regA,regB,regC,disp);
+          sem_post(&sem);          
+          break;
+        }
+
+        case (OP_CODE::EXCHANGE):{
+
+          InstrukcijaZamene(regB,regC);
+          sem_post(&sem);        
+          break;
+        }
+
+        case (OP_CODE::ARITHMETIC):{
+
+          InstrukcijaAritmetika(mod,regA,regB,regC,disp);
+          sem_post(&sem);          
+          break;
+        }
+          
+        case(OP_CODE::LOGIC):{
+
+          InstrukcijaLogika(mod,regA,regB,regC,disp);
+          sem_post(&sem);          
+          break;
+        }
+
+        case(OP_CODE::SHIFT):{
+
+          InstrukcijaShift(mod,regA,regB,regC,disp);
+          sem_post(&sem);          
+          break;
+        }
+
+        case (OP_CODE::STORE):{
+
+          InstrukcijaStore(mod,regA,regB,regC,disp);
+          sem_post(&sem);        
+          break;
+        }
+          
+        case (OP_CODE::LOAD):{
+
+          InstrukcijaLoad(mod,regA,regB,regC,disp);
+          sem_post(&sem);
+          break;
+        }
+        
+          break;
+      }
+
   }
-
-
-  switch (oc)
-  {
-    case (OP_CODE::HALT):{
-      ispisiRegistre();
-      flag = true;
-      sem_post(&sem);
-      break;
-    }
-
-    case(OP_CODE::INT):{
-      
-      InstrukcijaSoftverskogPrekida();
-      sem_post(&sem);
-      procitajInstrukciju(gprX[15]);
-      
-      break;
-    }
-
-    case (OP_CODE::CALL):{
-
-      InstrukcijaPozivaPotprograma(mod,regA,regB,regC,disp);
-      sem_post(&sem);
-      procitajInstrukciju(gprX[15]);
-      
-      break;
-    }
-
-    case (OP_CODE::JMP):{
-
-      InstrukcijaSkoka(mod,regA,regB,regC,disp);
-      sem_post(&sem);
-      procitajInstrukciju(gprX[15]);
-      
-      break;
-    }
-
-    case (OP_CODE::EXCHANGE):{
-
-      InstrukcijaZamene(regB,regC);
-      sem_post(&sem);
-      procitajInstrukciju(pc);
-     
-      break;
-    }
-
-    case (OP_CODE::ARITHMETIC):{
-
-      InstrukcijaAritmetika(mod,regA,regB,regC,disp);
-      sem_post(&sem);
-      procitajInstrukciju(pc);
-      
-      break;
-    }
-      
-    case(OP_CODE::LOGIC):{
-
-      InstrukcijaLogika(mod,regA,regB,regC,disp);
-      sem_post(&sem);
-      procitajInstrukciju(pc);
-      
-      break;
-    }
-
-    case(OP_CODE::SHIFT):{
-
-      InstrukcijaShift(mod,regA,regB,regC,disp);
-      sem_post(&sem);
-      procitajInstrukciju(pc);
-      
-      break;
-    }
-
-    case (OP_CODE::STORE):{
-
-      InstrukcijaStore(mod,regA,regB,regC,disp);
-      sem_post(&sem);
-      procitajInstrukciju(gprX[15]);
-     
-      break;
-    }
-      
-    case (OP_CODE::LOAD):{
-
-      InstrukcijaLoad(mod,regA,regB,regC,disp);
-      sem_post(&sem);
-      procitajInstrukciju(pc);
-      break;
-    }
-    
-      break;
-  }
-
+  
+  
   
 }
 
@@ -210,22 +201,22 @@ void Emulator::procitajInstrukciju(int& pc){
 
 void Emulator::InstrukcijaSoftverskogPrekida(){
 
-  gprX[14] -= 4;
-  uint32_t adresa = gprX[14];
-  int podatak = csrX[0];
+  gprX[SP] -= 4;
+  uint32_t adresa = gprX[SP];
+  int podatak = csrX[STATUS];    //smestanje statusa na stek
   smestiPodatakUMemoriju(adresa,podatak);
   
 
-  gprX[14] -= 4;
+  gprX[SP] -= 4;
 
-  adresa = gprX[14];
-  podatak = gprX[15];
+  adresa = gprX[SP];
+  podatak = gprX[PC];   //smestanje pc na stek
   smestiPodatakUMemoriju(adresa,podatak);
 
-  csrX[2] = 0x4;
-  csrX[0] |= 0x4;
+  csrX[CAUSE] = 0x4;
+  csrX[STATUS] |= 0x4;
 
-  gprX[15] = csrX[1];
+  gprX[PC] = csrX[HANDLER];
 
 }
 
@@ -235,22 +226,22 @@ void Emulator::InstrukcijaSoftverskogPrekida(){
 
 void Emulator::InstrukcijaPrekidTerminal(){
 
-  gprX[14] -= 4;
-  uint32_t adresa = gprX[14];
-  int podatak = csrX[0];
+  gprX[SP] -= 4;
+  uint32_t adresa = gprX[SP];
+  int podatak = csrX[STATUS];
   smestiPodatakUMemoriju(adresa,podatak);
   
 
-  gprX[14] -= 4;
+  gprX[SP] -= 4;
 
-  adresa = gprX[14];
-  podatak = gprX[15];
+  adresa = gprX[SP];
+  podatak = gprX[PC];
   smestiPodatakUMemoriju(adresa,podatak);
 
-  csrX[2] = 0x3;
-  csrX[0] |= 0x4;
+  csrX[CAUSE] = 0x3;
+  csrX[STATUS] |= 0x4;
 
-  gprX[15] = csrX[1];
+  gprX[PC] = csrX[HANDLER];
 
 }
 
@@ -260,10 +251,10 @@ void Emulator::InstrukcijaPrekidTerminal(){
 
 void Emulator::InstrukcijaPozivaPotprograma(int mod, int regA, int regB, int regC, int disp){
 
-  gprX[14] -= 4;
+  gprX[SP] -= 4;
 
-  uint32_t adresa = gprX[14];
-  int podatak = gprX[15];
+  uint32_t adresa = gprX[SP];
+  int podatak = gprX[PC];
 
   smestiPodatakUMemoriju(adresa,podatak);
   
@@ -272,13 +263,13 @@ void Emulator::InstrukcijaPozivaPotprograma(int mod, int regA, int regB, int reg
   {
       case (0):{
         
-        gprX[15] = gprX[regA] + gprX[regB] + disp;
+        gprX[PC] = gprX[regA] + gprX[regB] + disp;
         break;
       }
 
       case(1):{
 
-        gprX[15] = procitajIzMemorije(regA, regB, regC, disp);
+        gprX[PC] = procitajIzMemorije(regA, regB, regC, disp);
         break;
       }  
       
@@ -296,46 +287,46 @@ void Emulator::InstrukcijaSkoka(int mod, int regA, int regB, int regC, int disp)
     {
         case (0):{
 
-          gprX[15] = gprX[regA] + disp;
+          gprX[PC] = gprX[regA] + disp;
           break;
         }
           
         
         case(1):{
  
-          if (gprX[regB] == gprX[regC]) gprX[15] = gprX[regA] + disp; 
+          if (gprX[regB] == gprX[regC]) gprX[PC] = gprX[regA] + disp; 
           break;
         }
 
         case(2):{
-          if (gprX[regB] != gprX[regC]) gprX[15] = gprX[regA] + disp; 
+          if (gprX[regB] != gprX[regC]) gprX[PC] = gprX[regA] + disp; 
           break;
         }
           
         
         case(3):{
-          if (gprX[regB] > gprX[regC]) gprX[15] = gprX[regA] + disp; 
+          if (gprX[regB] > gprX[regC]) gprX[PC] = gprX[regA] + disp; 
           break;
         }
 
         case(4):{
-          gprX[15] = procitajIzMemorije(regA, regB, regC, disp);
+          gprX[PC] = procitajIzMemorije(regA, regB, regC, disp);
           break;
         }
 
         case(5):{
-          if (gprX[regB] == gprX[regC]) gprX[15] = procitajIzMemorije(regA, regB, regC, disp);
+          if (gprX[regB] == gprX[regC]) gprX[PC] = procitajIzMemorije(regA, regB, regC, disp);
           break;
         }
 
         case(6):{
-          if (gprX[regB] != gprX[regC]) gprX[15] = procitajIzMemorije(regA, regB, regC, disp);
+          if (gprX[regB] != gprX[regC]) gprX[PC] = procitajIzMemorije(regA, regB, regC, disp);
           break;
         }
           
         
         case(7):{
-          if (gprX[regB] > gprX[regC]) gprX[15] = procitajIzMemorije(regA, regB, regC, disp);
+          if (gprX[regB] > gprX[regC]) gprX[PC] = procitajIzMemorije(regA, regB, regC, disp);
           break;
         }
 
@@ -499,14 +490,6 @@ void Emulator::InstrukcijaStore(int mod, int regA, int regB, int regC, int disp)
   if (adresa == 0xFFFFFF00){
     std::cout << std::hex << mapa[0xFFFFFF00] << std::flush;
   }
-    
-    
-  
-
-  
-
-
-
 }
 
 
@@ -642,7 +625,7 @@ void Emulator::nitTerminal(){
 
       c = getchar();  // Čitanje pritisnutog tastera  
 
-      while(csrX[0] == 4){
+      while(csrX[STATUS] == 4){ // cekaj dok je prekid u toku
         
       }
 

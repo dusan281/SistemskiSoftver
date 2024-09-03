@@ -15,16 +15,23 @@
 
 static std::atomic<bool> flag(false);
 
+const int SP = 14;
+const int PC = 15;
+const int STATUS = 0;
+const int HANDLER = 1;
+const int CAUSE = 2;
+
 
 class Emulator{
 
 public :
+
   static std::map<uint32_t, uint8_t> mapa;
 
   static void pokreniEmulator();
   static void incijalizujMemoriju();
   static void pokreniIzvrsavanje();
-  static void procitajInstrukciju(int& pc);
+  static void procitajInstrukcije(int& pc);
 
 
   static void InstrukcijaSoftverskogPrekida();
@@ -68,6 +75,7 @@ public :
     LOGIC,
     SHIFT,
     STORE,
-    LOAD
+    LOAD,
+    START
   };
 };

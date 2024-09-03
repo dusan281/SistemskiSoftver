@@ -7,37 +7,43 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  for (int i = 1; i < argc; ++i) {
-        if (strstr(argv[i],".o")){
-          Linker::inputFilesNames.push_back(argv[i]);
-        }
+try
+  {
+    for (int i = 1; i < argc; ++i) {
+          if (strstr(argv[i],".o")){
+            Linker::inputFilesNames.push_back(argv[i]);
+          }
 
-        if (strstr(argv[i], "-o")){
-          Linker::outputFileName = argv[++i];
-        }
+          if (strstr(argv[i], "-o")){
+            Linker::outputFileName = argv[++i];
+          }
 
+    }
+      
+      if (strcmp(argv[1], "-hex") == 0){
+
+        for (int i = 1; i < argc; ++i) {
+
+          if (strstr(argv[i], "-place=")){
+            Linker::postavljanjaString.push_back(argv[i]);
+          }
+
+        }      
+
+        Linker::pokreniLinkerHex();
+
+      }
+
+
+
+      if (strcmp(argv[1], "-relocatable") == 0){
+
+        Linker::pokreniLinkerRelocatable();
+      }
+  } catch (const std::runtime_error& e){
+    std::cerr << "Izuzetak: " << e.what() << std::endl;
   }
-    
-    if (strcmp(argv[1], "-hex") == 0){
 
-      for (int i = 1; i < argc; ++i) {
-
-        if (strstr(argv[i], "-place=")){
-          Linker::postavljanjaString.push_back(argv[i]);
-        }
-
-      }      
-
-      Linker::pokreniLinkerHex();
-
-    }
-
-
-
-    if (strcmp(argv[1], "-relocatable") == 0){
-
-      Linker::pokreniLinkerRelocatable();
-    }
 
     
     Linker::brojacSekcija = 0;

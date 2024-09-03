@@ -13,7 +13,7 @@ void Asembler::DirektivaSkip(int& vrednost, int& line_num){
   }
 }
 
-void Asembler::DirektivaSection(std::string simbol, int& line_num){
+void Asembler::DirektivaSection(const std::string& simbol, int& line_num){
 
   zavrsiSekciju();
 
@@ -37,7 +37,7 @@ void Asembler::DirektivaGlobal(int& line_num){
 
   for (int i = 0; i < argumenti.size(); i++){
 
-    std::string simbol = argumenti[i].simbol;
+    std::string simbol = argumenti[i]->simbol;
     auto it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
     
     if (it == tabelaSimbola.end()){ // simbol nije u tabeli
@@ -56,6 +56,9 @@ void Asembler::DirektivaGlobal(int& line_num){
     }
   }
 
+
+  for (Argument* arg : argumenti) delete arg;
+
   argumenti.clear();
   argumenti.shrink_to_fit();  
 }
@@ -63,7 +66,7 @@ void Asembler::DirektivaGlobal(int& line_num){
 void Asembler::DirektivaExtern(int& line_num){
 
   for (int i = 0; i < argumenti.size(); i++){
-    std::string simbol = argumenti[i].simbol;
+    std::string simbol = argumenti[i]->simbol;
     auto it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
 
     if (it == tabelaSimbola.end()){ // simbol se ne nalazi u tabeli simbola
@@ -81,13 +84,15 @@ void Asembler::DirektivaExtern(int& line_num){
   
   }
 
+  for (Argument* arg : argumenti) delete arg;
+
   argumenti.clear();
   argumenti.shrink_to_fit();
 }
 
 
 
-void Asembler::DirektivaAscii(std::string simbol, int& line_num){
+void Asembler::DirektivaAscii(const std::string& simbol, int& line_num){
 
   if (!trSekcija){
 
@@ -121,20 +126,20 @@ void Asembler::DirektivaWord(int& line_num){
 
   for (int i = 0; i < argumenti.size(); i++){
     
-    if (argumenti[i].e == Operand::literal){ //kada je operand literal
+    if (argumenti[i]->e == Operand::literal){ //kada je operand literal
   
-      if ((argumenti[0].vrednost > 2147483647) || (argumenti[0].vrednost < -2147483648) ) ispisiGresku(line_num); // literal veci od 32 bita
+      if ((argumenti[0]->vrednost > 2147483647) || (argumenti[0]->vrednost < -2147483648) ) ispisiGresku(line_num); // literal veci od 32 bita
 
-      trSekcija->kod_sekcije.push_back( (argumenti[i].vrednost >> 24) & 0xFF);
-      trSekcija->kod_sekcije.push_back( (argumenti[i].vrednost >> 16) & 0xFF); 
-      trSekcija->kod_sekcije.push_back( (argumenti[i].vrednost >> 8) & 0xFF);
-      trSekcija->kod_sekcije.push_back( argumenti[i].vrednost & 0xFF);
+      trSekcija->kod_sekcije.push_back( (argumenti[i]->vrednost >> 24) & 0xFF);
+      trSekcija->kod_sekcije.push_back( (argumenti[i]->vrednost >> 16) & 0xFF); 
+      trSekcija->kod_sekcije.push_back( (argumenti[i]->vrednost >> 8) & 0xFF);
+      trSekcija->kod_sekcije.push_back( argumenti[i]->vrednost & 0xFF);
 
     }
 
     else{ // kada je operand simbol
 
-      std::string simbol = argumenti[i].simbol;
+      std::string simbol = argumenti[i]->simbol;
       auto it = std::find(tabelaSimbola.begin(),tabelaSimbola.end(), simbol);
 
       if (it == tabelaSimbola.end()){ // simbol se ne nalazi u tabeli simbola
@@ -161,6 +166,8 @@ void Asembler::DirektivaWord(int& line_num){
 
   }
 
+  for (Argument* arg : argumenti) delete arg;
+
   argumenti.clear();
   argumenti.shrink_to_fit();
 }
@@ -179,16 +186,18 @@ void Asembler::DirektivaEnd(){
   ispisiIzlazneFajlove();
 
 
-
-  argumenti = std::vector<Argument>();  // oslobodi memoriju
   for (auto sekcija : sveSekcije){
 
-    delete sekcija.second;
+    Sekcija* i = sekcija.second;
+      for (auto ulaziBazen : i->promenljive_bazen) delete ulaziBazen.second;
+    
+    delete i;
   }
 
   for (auto simbol : tabelaSimbola){
 
-    simbol.backpatch = std::vector<BackpatchUlaz>();
+    for (BackpatchUlaz* backUlaz : simbol.backpatch) delete backUlaz;
+    simbol.backpatch = std::vector<BackpatchUlaz*>();
   }
 
   tabelaSimbola = std::vector<TabelaSimbolaUlaz>();
@@ -200,7 +209,7 @@ void Asembler::DirektivaEnd(){
 
 
 
-void Asembler::obradiLabelu(std::string simbol, int& line_num){
+void Asembler::obradiLabelu(const std::string& simbol, int& line_num){
 
   if (trSekcija == nullptr){ // ne moze labela van sekcije
     
