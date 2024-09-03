@@ -52,6 +52,10 @@ void Linker::pokreniLinkerRelocatable(){
   for (auto& simbol1 : tabelaSimbolaLinker){
 
     proveriDvaPutaDefinisanSimbol(simbol1, i, oss);
+
+    proveriTipSimbola(simbol1, i, oss);
+
+    
     i++;
   }
 
@@ -60,6 +64,9 @@ void Linker::pokreniLinkerRelocatable(){
 
   tabelaSimbolaLinker.erase(std::remove_if(tabelaSimbolaLinker.begin(), tabelaSimbolaLinker.end(), izbrisiEksterneSimboleDefinisane), tabelaSimbolaLinker.end());
 
+  proveriWeakSimbole(oss);
+
+  tabelaSimbolaLinker.erase(std::remove_if(tabelaSimbolaLinker.begin(), tabelaSimbolaLinker.end(), izbrisiWeakSimbole), tabelaSimbolaLinker.end());
 
   spojIstoimeneSekcije();
 
@@ -110,12 +117,17 @@ void Linker::pokreniLinkerHex(){
       proveriNedefinisanSimbol(simbol1,oss);
 
       proveriDvaPutaDefinisanSimbol(simbol1,i,oss);
+
+      proveriTipSimbola(simbol1,i,oss);
       
       i++;
     }
 
   tabelaSimbolaLinker.erase(std::remove_if(tabelaSimbolaLinker.begin(), tabelaSimbolaLinker.end(), izbrisiEksterneSimboleDefinisane), tabelaSimbolaLinker.end());
 
+  proveriWeakSimbole(oss);
+
+  tabelaSimbolaLinker.erase(std::remove_if(tabelaSimbolaLinker.begin(), tabelaSimbolaLinker.end(), izbrisiWeakSimbole), tabelaSimbolaLinker.end());
 
   spojIstoimeneSekcije();
 
@@ -408,6 +420,11 @@ void Linker::procitajFajl(std::ifstream& stream){
          int velicina;
          procitajInteger(velicina, stream);
 
+         int duzina_vezivanja;
+         procitajInteger(duzina_vezivanja, stream);
+
+         std::string ime_vezivanja = procitajString(duzina_vezivanja, stream); 
+
          if (broj_sekcije > 0){
           
            broj_sekcije = mapaSimbola.at(broj_sekcije);
@@ -416,7 +433,7 @@ void Linker::procitajFajl(std::ifstream& stream){
          if (ime_tipa == "SCTN") redniBroj = broj_sekcije;
          if (ime_tipa == "NOTYP") redniBroj = ++brojacSimbola;
 
-         TabelaSimbolaUlaz ulaz = TabelaSimbolaUlaz(ime_simbola, broj_sekcije, redniBroj, vrednost, ime_tipa, "GLOB", velicina);
+         TabelaSimbolaUlaz ulaz = TabelaSimbolaUlaz(ime_simbola, broj_sekcije, redniBroj, vrednost, ime_tipa, ime_vezivanja, velicina);
 
          tabelaSimbolaAsembler.push_back(ulaz);
         
@@ -648,7 +665,7 @@ void Linker::proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i, st
 
   
 
-  if (simbol1.brSekcije != -1 && simbol1.tip != "SCTN"){
+  if (simbol1.brSekcije != -1 && simbol1.tip != "SCTN" && simbol1.vezivanje != "WEAK_GLOB"){
 
         bool flag = false;
         
@@ -667,6 +684,54 @@ void Linker::proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i, st
         }
 
       }
+}
+
+
+void Linker::proveriWeakSimbole(std::ostringstream& oss){
+
+  for (int i = 0 ; i < tabelaSimbolaLinker.size(); i ++){
+
+    if (tabelaSimbolaLinker[i].vezivanje == "WEAK_GLOB"){
+
+      bool flag = false;
+      
+      for (int j = 0; j < tabelaSimbolaLinker.size(); j++){
+
+      
+
+        if (i != j && tabelaSimbolaLinker[j].vezivanje == "GLOB" && tabelaSimbolaLinker[i].simbol == tabelaSimbolaLinker[j].simbol){
+
+// postoji strong definicija, ne radim nista, kasnije sklanjam weak definicije iz tabele
+
+          flag = true;
+          break;
+        } 
+      }
+// ne postoji strong definicija simbola, prva weak na koju naidjem proglasim za strong
+
+      if (!flag) tabelaSimbolaLinker[i].vezivanje = "GLOB";   
+    }
+  }
+
+}
+
+
+
+void Linker::proveriTipSimbola(TabelaSimbolaUlaz& simbol1, int i, std::ostringstream& oss){
+
+  bool flag = false;
+
+  for (auto& simbol2 : tabelaSimbolaLinker){
+          if (simbol2.simbol == simbol1.simbol && simbol2.tip != simbol1.tip){
+            flag = true;
+            break;
+          } 
+        }
+
+        if (flag){
+          greske = true;
+            oss << "Koriscen simbol sa razlicitim tipom u razlicitim sekcijama: " << simbol1.simbol << std::endl;
+        }
 }
 
 
@@ -691,6 +756,11 @@ void Linker::proveriNedefinisanSimbol(TabelaSimbolaUlaz& simbol1, std::ostringst
       }
 }
 
+
+bool Linker::izbrisiWeakSimbole(TabelaSimbolaUlaz& ulaz){
+
+  return ulaz.vezivanje == "WEAK_GLOB";
+}
 
 
 bool Linker::izbrisiEksterneSimboleDefinisane(TabelaSimbolaUlaz& ulaz){

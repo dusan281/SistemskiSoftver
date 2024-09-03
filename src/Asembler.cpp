@@ -235,7 +235,7 @@ void Asembler::srediLokalneSimbole(){
   for (auto simbol = tabelaSimbola.begin(); simbol != tabelaSimbola.end(); simbol++){
 
 
-    if (simbol->brSekcije > 0 && simbol->tip == "NOTYP"){
+    if (simbol->brSekcije > 0 && simbol->tip != "SCTN"){
       
       trSekcija = sveSekcije.at(simbol->brSekcije);
 
@@ -478,7 +478,7 @@ void Asembler::ST_REG_IND(int gprA, int gprC){
 }
 
 
-void Asembler::ST_REG_IND_POM(int gprA, int gprC, int disp, int& line_num){
+void Asembler::ST_REG_IND_POM(int gprA, int gprB, int gprC, int disp, int& line_num){
 
 
   if (( disp > 2047) || (disp < -2048) ) {
@@ -486,7 +486,7 @@ void Asembler::ST_REG_IND_POM(int gprA, int gprC, int disp, int& line_num){
     ispisiGresku(line_num);
    }
 
-  trSekcija->kod_sekcije.push_back(gprA<<4);
+  trSekcija->kod_sekcije.push_back(gprA<<4 | gprB);
   trSekcija->kod_sekcije.push_back(gprC<<4 | ( (disp>>8) & 0xF) );
   trSekcija->kod_sekcije.push_back(disp & 0xFF) ;
 
@@ -521,14 +521,12 @@ void Asembler::LD_REG_IND(int gprA, int gprB){
   zavrsiInstrukciju();
 }
 
-void Asembler::LD_REG_IND_POM(int& line_num){
+void Asembler::LD_REG_IND_POM(int& gprA, int& gprB, int gprC, int disp, int& line_num){
 
 
 
   trSekcija->kod_sekcije[trSekcija->LC] |= 0b0010;
-  int gprB = argumenti[0]->vrednost;
-  int disp = argumenti[1]->vrednost;
-  int gprA = argumenti[2]->vrednost;
+  
 
    if (( disp > 2047) || (disp < -2048) ) {
    
@@ -536,7 +534,7 @@ void Asembler::LD_REG_IND_POM(int& line_num){
    }
 
   trSekcija->kod_sekcije.push_back(gprA<<4|gprB);
-  trSekcija->kod_sekcije.push_back( (disp>>8) & 0xF);
+  trSekcija->kod_sekcije.push_back( gprC << 4 | (disp>>8) & 0xF);
   trSekcija->kod_sekcije.push_back(disp & 0xFF);
 
   zavrsiInstrukciju();
@@ -567,6 +565,32 @@ void Asembler::napraviInstrukciju(Token_Instrukcija t, int brLinije, int gpr1, i
   
   switch (t)
   {
+
+    case add_shr:{
+      InstrukcijaAdd(gpr1, gpr2, 1);
+      break;
+    }
+
+    case add_shl:{
+      InstrukcijaAdd(gpr1, gpr2, 2);
+      break;
+    }
+
+    case sub_shr:{
+      InstrukcijaSub(gpr1, gpr2, 1);
+      break;
+    }
+
+    case sub_shl:{
+      InstrukcijaSub(gpr1, gpr2, 2);
+      break;
+    }
+
+    case push_mod:{
+      InstrukcijaPushMod();
+      break;
+    }
+
     case halt:{
       InstrukcijaHalt();
       break;
@@ -783,6 +807,11 @@ void Asembler::ispisiBinarniFajl(std::fstream& stream){
     ispisiInteger(simbol.redniBroj, stream);
 
     ispisiInteger(simbol.velicina, stream);
+
+    int duzina_vezivanja = simbol.vezivanje.size();
+
+    ispisiInteger(duzina_vezivanja, stream);
+    ispisiString(simbol.vezivanje, stream);
 
   }
 }

@@ -23,13 +23,13 @@ using namespace std;
     char *symbol;
 }
 
-%token GLOBAL EXTERN SECTION WORD ASCII NAVODNICI SKIP END LSQB RSQB PLUS COMMA TWO_PUNKT COMMENT
-%token HALT INT IRET CALL RET JMP ENDL
+%token GLOBAL EXTERN SECTION WORD ASCII NAVODNICI SKIP END LSQB RSQB PLUS COMMA TWO_PUNKT COMMENT LVB RVB WEAK
+%token HALT INT IRET CALL RET JMP ENDL TYPE 
 %token BEQ BNE BGT PUSH POP XCHG ADD SUB MUL DIV NOT AND OR XOR SHL SHR LD ST CSR_RD CSR_WR
 
 %token <literal> LITERAL MEM_LITERAL
 %token <reg> REG_VALUE CSR
-%token <symbol> SYMBOL_MEM SYMBOL 
+%token <symbol> SYMBOL_MEM SYMBOL FUNC DATA NOTYPE
 
 %%
 
@@ -57,12 +57,22 @@ labela:
   SYMBOL_MEM TWO_PUNKT {Asembler::obradiLabelu($1, line_num);}
 
 directive:
-    GLOBAL symbol_list { 
+
+    TYPE SYMBOL_MEM tip {
+      Asembler::DirektivaType($2, line_num);
+    }
+
+    | GLOBAL symbol_list { 
       Asembler::DirektivaGlobal(line_num);
       }
     | EXTERN symbol_list { 
       Asembler::DirektivaExtern(line_num);
       }
+
+    | WEAK symbol_list {
+      Asembler::DirektivaWeak(line_num);
+    }
+
     | SECTION SYMBOL_MEM {
         Asembler::DirektivaSection($2, line_num);
       }
@@ -78,6 +88,12 @@ directive:
       Asembler::DirektivaAscii($3, line_num);
     }
     ;
+
+tip:
+    FUNC { Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0));}
+    | DATA { Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0));}
+    | NOTYPE { Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0));}
+
 
 symbol_list:
     symbol_list COMMA SYMBOL_MEM { 
@@ -108,7 +124,12 @@ symbol_or_literal_list:
     ;
 
 instruction:
-    HALT { 
+
+    PUSH LVB registri RVB {
+      Asembler::napraviInstrukciju(Token_Instrukcija::push_mod, line_num);
+    }
+    
+    | HALT { 
       Asembler::napraviInstrukciju(Token_Instrukcija::halt,line_num);
       }
 
@@ -156,6 +177,27 @@ instruction:
     | ADD REG_VALUE COMMA REG_VALUE { 
         Asembler::napraviInstrukciju(Token_Instrukcija::add, line_num, $2, $4);
       }
+    
+    | ADD REG_VALUE COMMA REG_VALUE COMMA SHL MEM_LITERAL {
+        Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $7));
+        Asembler::napraviInstrukciju(Token_Instrukcija::add_shl, line_num, $2, $4);
+    }
+
+    | ADD REG_VALUE COMMA REG_VALUE COMMA SHR MEM_LITERAL {
+        Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $7));
+        Asembler::napraviInstrukciju(Token_Instrukcija::add_shr, line_num, $2, $4);
+    }
+
+    | SUB REG_VALUE COMMA REG_VALUE COMMA SHL MEM_LITERAL {
+        Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $7));
+        Asembler::napraviInstrukciju(Token_Instrukcija::sub_shl, line_num, $2, $4);
+    }
+
+    | SUB REG_VALUE COMMA REG_VALUE COMMA SHR MEM_LITERAL {
+        Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $7));
+        Asembler::napraviInstrukciju(Token_Instrukcija::sub_shr, line_num, $2, $4);
+    }
+
     | SUB REG_VALUE COMMA REG_VALUE { 
         Asembler::napraviInstrukciju(Token_Instrukcija::sub, line_num, $2, $4);
         }
@@ -204,6 +246,10 @@ instruction:
       }
     ;
 
+registri:
+  REG_VALUE { Asembler::dodajUListuArgumenata(new Argument(Operand::literal,"",$1));}
+  | registri COMMA REG_VALUE { Asembler::dodajUListuArgumenata(new Argument(Operand::literal,"",$3));}
+
 operand_skok:
     MEM_LITERAL { Asembler::Asembler::postaviAdresiranje(Adresiranje::SKOK); Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1));}
     | SYMBOL_MEM { Asembler::Asembler::postaviAdresiranje(Adresiranje::SKOK); Asembler::dodajUListuArgumenata(new Argument(Operand::simbol, $1, 0));}
@@ -217,6 +263,7 @@ operand_instrukcija:
     | REG_VALUE { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $1)); Asembler::postaviAdresiranje(Adresiranje::REG_DIR);; }
     | LSQB REG_VALUE RSQB { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2)); Asembler::postaviAdresiranje(Adresiranje::REG_IND);; }
     | LSQB REG_VALUE PLUS MEM_LITERAL RSQB { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2)); Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $4));Asembler::postaviAdresiranje(Adresiranje::REG_IND_POM); }
+    | LSQB REG_VALUE PLUS REG_VALUE RSQB { Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $2)); Asembler::dodajUListuArgumenata(new Argument(Operand::literal, "", $4)); Asembler::postaviAdresiranje(Adresiranje::REG_REG_IND); }
 
 
 ENDLS:

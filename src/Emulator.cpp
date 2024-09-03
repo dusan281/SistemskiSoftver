@@ -352,24 +352,24 @@ void Emulator::InstrukcijaAritmetika(int mod, int regA, int regB, int regC, int 
   {
         case (0):{
 
-          gprX[regA] = gprX[regB] + gprX[regC];
+          if (regA != 0) gprX[regA] = gprX[regB] + gprX[regC];
           break;
         }
           
         
         case(1):{
-          gprX[regA] = gprX[regB] - gprX[regC];
+          if (regA != 0) gprX[regA] = gprX[regB] - gprX[regC];
           break;
         }
 
         case(2):{
-          gprX[regA] = gprX[regB] * gprX[regC];
+          if (regA != 0) gprX[regA] = gprX[regB] * gprX[regC];
           break;
         }
           
         
         case(3):{
-          gprX[regA] = gprX[regB] / gprX[regC];
+          if (regA != 0 && gprX[regC] != 0) gprX[regA] = gprX[regB] / gprX[regC];
           break;
         }
         
@@ -387,24 +387,24 @@ void Emulator::InstrukcijaLogika(int mod, int regA, int regB, int regC, int disp
   {
         case (0):{
 
-          gprX[regA] = ~gprX[regB];
+          if (regA != 0) gprX[regA] = ~gprX[regB];
           break;
         }
           
         
         case(1):{
-          gprX[regA] = gprX[regB] & gprX[regC];
+          if (regA != 0) gprX[regA] = gprX[regB] & gprX[regC];
           break;
         }
 
         case(2):{
-          gprX[regA] = gprX[regB] | gprX[regC];
+          if (regA != 0) gprX[regA] = gprX[regB] | gprX[regC];
           break;
         }
           
         
         case(3):{
-          gprX[regA] = gprX[regB] ^ gprX[regC];
+          if (regA != 0) gprX[regA] = gprX[regB] ^ gprX[regC];
           break;
         }
         
@@ -424,13 +424,33 @@ void Emulator::InstrukcijaShift(int mod, int regA, int regB, int regC, int disp)
   {
         case (0):{
 
-          gprX[regA] = gprX[regB] << gprX[regC];
+          if (regA != 0) gprX[regA] = gprX[regB] << gprX[regC];
           break;
         }
           
         
         case(1):{
-          gprX[regA] = gprX[regB] >> gprX[regC];
+          if (regA != 0) gprX[regA] = gprX[regB] >> gprX[regC];
+          break;
+        }
+
+        case(2):{
+          if (regA != 0) gprX[regA] = gprX[regA] + gprX[regB] >> disp;
+          break;
+        }
+
+        case(3):{
+          if (regA != 0) gprX[regA] = gprX[regA] + gprX[regB] << disp;
+          break;
+        }
+
+        case(4):{
+          if (regA != 0) gprX[regA] = gprX[regA] - gprX[regB] >> disp;
+          break;
+        }
+
+        case(5):{
+          if (regA != 0) gprX[regA] = gprX[regA] - gprX[regB] << disp;
           break;
         }
         
@@ -464,9 +484,14 @@ void Emulator::InstrukcijaStore(int mod, int regA, int regB, int regC, int disp)
 
         case(1):{
 
-          gprX[regA] += disp;
-          adresa = gprX[regA];
-          podatak = gprX[regC];
+          if (regA != 0){
+
+            gprX[regA] += disp;
+            adresa = gprX[regA];
+            podatak = gprX[regC];
+          }
+
+          
 
           smestiPodatakUMemoriju(adresa,podatak);
           break;
@@ -500,13 +525,13 @@ void Emulator::InstrukcijaLoad(int mod, int regA, int regB, int regC, int disp){
   {
         case (0):{
 
-          gprX[regA] = csrX[regB];
+          if (regA != 0) gprX[regA] = csrX[regB];
           break;
         }
 
         case(1):{
 
-          gprX[regA] = gprX[regB] + disp;
+          if (regA != 0) gprX[regA] = gprX[regB] + disp;
           break;
           
         }
@@ -514,14 +539,14 @@ void Emulator::InstrukcijaLoad(int mod, int regA, int regB, int regC, int disp){
         
         case(2):{
 
-          gprX[regA] = int(procitajIzMemorije(0,regB,regC,disp));
+          if (regA != 0) gprX[regA] = int(procitajIzMemorije(0,regB,regC,disp));
           break;
         }
 
         case(3):{
 
-          gprX[regA] = int (procitajIzMemorije(0,regB,0,0));
-          gprX[regB] += disp;
+          if (regA != 0) gprX[regA] = int (procitajIzMemorije(0,regB,0,0));
+          if (regA != 0) gprX[regB] += disp;
           break;
         }
 

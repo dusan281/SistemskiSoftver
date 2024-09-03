@@ -19,6 +19,7 @@ enum Adresiranje{
   MEM_IND,
   IMMED,
   REG_IND_POM,
+  REG_REG_IND,
   LD_IMMED,
   STORE_MEM_DIR,
   SKOK,
@@ -51,7 +52,12 @@ enum Token_Instrukcija{
   ld,
   st,
   csrrd,
-  csrwr
+  csrwr,
+  push_mod,
+  add_shr,
+  add_shl,
+  sub_shr,
+  sub_shl
 };
 
 enum Operand{
@@ -227,12 +233,14 @@ public:
   static void postaviAdresiranje(enum Adresiranje a);
 
 
+  static void DirektivaType(const std::string& simbol, int& line_num);
   static void DirektivaSection(const std::string& simbol, int& line_num);
   static void DirektivaEnd();
   static void DirektivaGlobal(int& line_num);
   static void DirektivaSkip(int& vrednost, int& line_num);
   static void DirektivaAscii(const std::string& simbol, int& line_num);
   static void DirektivaExtern(int& line_num);
+  static void DirektivaWeak(int& line_num);
   static void DirektivaWord(int& line_num);
   static void obradiLabelu(const std::string& simbol, int& line_num);
 
@@ -241,12 +249,12 @@ public:
   static void LD_MEM_DIR();
   static void resiSimbolLiteral(int gprA, int gprB, int gprC, Argument* arg);
   static void LD_REG_IND(int gprA, int gprB);
-  static void LD_REG_IND_POM(int& line_num);
+  static void LD_REG_IND_POM(int& gprA, int& gprB, int gprC, int disp, int& line_num);
 
   static void ST_REG_DIR(int& gprA);
   static void ST_MEM_DIR(int& gprA);
   static void ST_REG_IND(int gprA, int gprC);
-  static void ST_REG_IND_POM(int gprA, int gprB, int gprC, int& line_num);
+  static void ST_REG_IND_POM(int gprA, int gprB, int gprC, int disp, int& line_num);
 
 
 
@@ -269,8 +277,8 @@ public:
   static void InstrukcijaSt(int& line_num);
 
 
-  static void InstrukcijaAdd(int gpr1, int gpr2);
-  static void InstrukcijaSub(int gpr1, int gpr2);
+  static void InstrukcijaAdd(int gpr1, int gpr2, int mod = 0);
+  static void InstrukcijaSub(int gpr1, int gpr2, int mod = 0); // 0 je obicna instrukcija, 1 je shr, 2 je shl
   static void InstrukcijaMul(int gpr1, int gpr2);
   static void InstrukcijaDiv(int gpr1, int gpr2);
   static void InstrukcijaNot(int gpr1);
@@ -285,6 +293,7 @@ public:
   static void InstrukcijaCsrwr(int gpr1, int csr);
 
 
+  static void InstrukcijaPushMod();
   static void InstrukcijaPush(int gpr1);
   static void InstrukcijaPop(int gpr1);
 

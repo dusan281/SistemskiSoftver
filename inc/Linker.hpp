@@ -29,7 +29,7 @@ public:
 
   static void proveriNedefinisanSimbol(TabelaSimbolaUlaz& simbol1, std::ostringstream& oss);
   static void proveriDvaPutaDefinisanSimbol(TabelaSimbolaUlaz& simbol1, int i, std::ostringstream& oss);
-
+  static void proveriWeakSimbole(std::ostringstream& oss);
 
   static void procitajFajl(std::ifstream& stream);
   static void procitajInteger(int& a, std::ifstream& stream);
@@ -58,6 +58,7 @@ public:
   static void izbaciPonavljanjaEksternihSimbola();
 
   static bool izbrisiEksterneSimboleDefinisane(TabelaSimbolaUlaz& ulaz);
+  static bool izbrisiWeakSimbole(TabelaSimbolaUlaz& ulaz);
 
   static std::vector<Sekcija>::iterator vratiSekciju(std::string& sekcija);
 
@@ -67,7 +68,7 @@ public:
   static void ispisiInteger(int& a, std::fstream& stream);
   static void ispisiString(std::string& s, std::fstream& stream);
 
-
+  static void proveriTipSimbola(TabelaSimbolaUlaz& simbol1, int i, std::ostringstream& oss);
 
   
 };

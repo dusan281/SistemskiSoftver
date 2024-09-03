@@ -4,6 +4,8 @@
 %}
 
 
+LVB "{"
+RVB "}"
 
 LSQB  "["
 RSQB  "]"
@@ -16,12 +18,18 @@ TWO_PUNKT ":"
 
 \.global      { return GLOBAL; }
 \.extern      { return EXTERN; }
+\.weak        { return WEAK; }
+\.type        { return TYPE; }
 \.section     { return SECTION; }
 \.word        { return WORD; }
 \.skip        { return SKIP; }
 \.ascii       { return ASCII; }
 \.end         { return END; }
-\"             { return NAVODNICI; }
+\"            { return NAVODNICI; }
+
+FUNC          {yylval.symbol = strdup(yytext); return FUNC; }
+DATA          {yylval.symbol = strdup(yytext); return DATA; }
+NOTYPE        {yylval.symbol = strdup(yytext); return NOTYPE; }
 
 halt         { return HALT; }
 int          { return INT; }
@@ -85,6 +93,8 @@ $[a-zA-Z_][a-zA-Z0-9_]* { yylval.symbol = strdup(yytext+1); return SYMBOL; }
 {PLUS}            {return PLUS;}
 {COMMA}           { return COMMA;}
 {TWO_PUNKT}       { return TWO_PUNKT;}
+{LVB}             { return LVB;}
+{RVB}             { return RVB;}
 [ \t\r]+      { /* Ignoriši bele karaktere */ }
 \n             { line_num++;return ENDL;}
 

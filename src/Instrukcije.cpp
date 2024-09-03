@@ -51,22 +51,98 @@ void Asembler::InstrukcijaRet(){
   zavrsiInstrukciju();
 }
 
-void Asembler::InstrukcijaAdd(int gpr1, int gpr2){
+void Asembler::InstrukcijaAdd(int gpr1, int gpr2, int mod){ // 1 -> shr, 2 -> shl
+
+  switch(mod){
+    case (0):{
+      trSekcija->kod_sekcije.push_back(80);
+      trSekcija->kod_sekcije.push_back(gpr2<<4|gpr2);
+      trSekcija->kod_sekcije.push_back(gpr1<<4);
+      trSekcija->kod_sekcije.push_back(0);
+      zavrsiInstrukciju();
+      break;
+    }
+
+    case(1):{
+
+      int c = argumenti[0]->vrednost;
+
+      int c1 = (c >> 8) & 0xF;
+      int c2 = c & 0xFF;
+
+      trSekcija->kod_sekcije.push_back(7<<4 | 2);
+      trSekcija->kod_sekcije.push_back(gpr2 << 4 | gpr1);
+      trSekcija->kod_sekcije.push_back(c1);
+      trSekcija->kod_sekcije.push_back(c2);  
+
+      zavrsiInstrukciju();
+      break;
+    }
+
+    case(2):{
+      
+      int c = argumenti[0]->vrednost;
+      int c1 = (c >> 8) & 0xF;
+      int c2 = c & 0xFF;
+
+      trSekcija->kod_sekcije.push_back(7<<4 | 3);
+      trSekcija->kod_sekcije.push_back(gpr2 << 4 | gpr1);
+      trSekcija->kod_sekcije.push_back(c1);
+      trSekcija->kod_sekcije.push_back(c2); 
+
+      zavrsiInstrukciju();
+      break;
+    }
+  }
   
-  trSekcija->kod_sekcije.push_back(80);
-  trSekcija->kod_sekcije.push_back(gpr2<<4|gpr2);
-  trSekcija->kod_sekcije.push_back(gpr1<<4);
-  trSekcija->kod_sekcije.push_back(0);
-  zavrsiInstrukciju();
+
 }
 
-void Asembler::InstrukcijaSub(int gpr1, int gpr2){
+void Asembler::InstrukcijaSub(int gpr1, int gpr2, int mod){
+
+  switch(mod){
+
+    case(0):{
+      trSekcija->kod_sekcije.push_back(81);
+      trSekcija->kod_sekcije.push_back(gpr2<<4|gpr2);
+      trSekcija->kod_sekcije.push_back(gpr1<<4);
+      trSekcija->kod_sekcije.push_back(0);
+      zavrsiInstrukciju();
+      break;
+    }
+
+    case(1):{
+      
+      int c = argumenti[0]->vrednost;
+
+      int c1 = (c >> 8) & 0xF;
+      int c2 = c & 0xFF;
+
+      trSekcija->kod_sekcije.push_back(7<<4 | 4);
+      trSekcija->kod_sekcije.push_back(gpr2 << 4 | gpr1);
+      trSekcija->kod_sekcije.push_back(c1);
+      trSekcija->kod_sekcije.push_back(c2); 
+      zavrsiInstrukciju();
+      break;
+    }
+
+    case(2):{
+      
+      int c = argumenti[0]->vrednost;
+
+      int c1 = (c >> 8) & 0xF;
+      int c2 = c & 0xFF;
+
+      trSekcija->kod_sekcije.push_back(7<<4 | 5);
+      trSekcija->kod_sekcije.push_back(gpr2 << 4 | gpr1);
+      trSekcija->kod_sekcije.push_back(c1);
+      trSekcija->kod_sekcije.push_back(c2); 
+      zavrsiInstrukciju();
+      break;
+    }
+  }  
+
   
-  trSekcija->kod_sekcije.push_back(81);
-  trSekcija->kod_sekcije.push_back(gpr2<<4|gpr2);
-  trSekcija->kod_sekcije.push_back(gpr1<<4);
-  trSekcija->kod_sekcije.push_back(0);
-  zavrsiInstrukciju();
 }
 
 void Asembler::InstrukcijaMul(int gpr1, int gpr2){
@@ -156,6 +232,25 @@ void Asembler::InstrukcijaPop(int gpr1){
   zavrsiInstrukciju();
 }
 
+
+void Asembler::InstrukcijaPushMod(){
+
+  for (int i = 0; i < argumenti.size() - 1; i++){
+    for (int j = i + 1; j < argumenti.size(); j ++)
+      if (argumenti[i]->vrednost < argumenti[j]->vrednost){
+        int pomoc = argumenti[i]->vrednost;
+        argumenti[i]->vrednost = argumenti[j]->vrednost;
+        argumenti[j]->vrednost = pomoc;
+      }
+  }
+
+  for (Argument* arg : argumenti) InstrukcijaPush(arg->vrednost);
+
+
+
+}
+
+
 void Asembler::InstrukcijaPush(int gpr1){
   trSekcija->kod_sekcije.push_back(129);
   trSekcija->kod_sekcije.push_back(14<<4);
@@ -239,8 +334,21 @@ void Asembler::InstrukcijaLd(int& line_num){
 
           case Adresiranje::REG_IND_POM:{
 
+            int gprB = argumenti[0]->vrednost;
+            int disp = argumenti[1]->vrednost;
+            int gprA = argumenti[2]->vrednost;
             
-            LD_REG_IND_POM(line_num);
+            LD_REG_IND_POM(gprA,gprB,0,disp,line_num);
+            break;
+          }
+
+          case Adresiranje::REG_REG_IND:{
+
+            int gprB = argumenti[0]->vrednost;
+            int gprC = argumenti[1]->vrednost;
+            int gprA = argumenti[2]->vrednost;
+
+            LD_REG_IND_POM(gprA, gprB, gprC, 0, line_num);
             break;
           }
           
@@ -278,7 +386,16 @@ void Asembler::InstrukcijaSt(int& line_num){
             int gprA = argumenti[1]->vrednost;
             int disp = argumenti[2]->vrednost;
 
-            ST_REG_IND_POM(gprA,gprC,disp,line_num);
+            ST_REG_IND_POM(gprA,0,gprC,disp,line_num);
+            break;
+          }
+
+          case Adresiranje::REG_REG_IND:{
+
+            int gprA = argumenti[1]->vrednost;
+            int gprB = argumenti[2]->vrednost;
+
+            ST_REG_IND_POM(gprA,gprB,gprC,0,line_num);
             break;
           }
           
@@ -292,7 +409,12 @@ void Asembler::InstrukcijaSt(int& line_num){
             break;
           }
 
-          default:
+          default:{
+            std::ostringstream oss;
+            oss << " Pogresno adresiranje na liniji " << line_num << std::endl;
+            throw std::runtime_error(oss.str());
+
+          }
             break;
         }
 

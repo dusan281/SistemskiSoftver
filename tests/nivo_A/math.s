@@ -1,7 +1,9 @@
 # file: math.s
 
-.global mathAdd, mathSub, mathMul, mathDiv
+.weak mathAdd, mathSub, mathMul, mathDiv
 
+.global klinac
+.type klinac DATA
 .section math
 mathAdd:
     push %r2
@@ -34,5 +36,7 @@ mathDiv:
     div %r2, %r1 # r1 used for the result
     pop %r2
     ret
+
+klinac:
 
 .end
